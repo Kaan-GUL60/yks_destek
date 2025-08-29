@@ -290,6 +290,18 @@ void setFilterKonBasedOnX(int x) {
   }
 }
 
+final konularMap = {
+  0: konuListTurkce,
+  1: konuListMatematik,
+  2: konuListGeometri,
+  3: konuListFizik,
+  4: konuListKimya,
+  5: konuListBiyoloji,
+  6: konuListTarih,
+  7: konuListCografya,
+  8: konuListDin,
+  9: konuListFelsefe,
+};
 // Kullanımı:
 // setFilterKonBasedOnX(x);
 

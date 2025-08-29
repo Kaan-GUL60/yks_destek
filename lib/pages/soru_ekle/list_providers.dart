@@ -55,16 +55,19 @@ final filteredHataNedeniProvider = Provider<List<String>>((ref) {
     return hataNedeni.where((a) => a.toLowerCase().contains(query)).toList();
   }
 });
-
 final filteredKonuProvider = Provider<List<String>>((ref) {
-  final query = ref
-      .watch(searchQueryKonuProvider)
-      .toLowerCase(); // Arama sorgusunu dinle
+  final secilenDers = ref.watch(selectedDersProvider);
+  final query = ref.watch(searchQueryKonuProvider);
 
-  if (query.isEmpty) {
-    return filterKonular; // Sorgu boşsa tüm listeyi döndür
-  } else {
-    // Sorguya uyan dersleri filtrele
-    return filterKonular.where((a) => a.toLowerCase().contains(query)).toList();
-  }
+  if (secilenDers == null) return [];
+
+  final dersIndex = dersler.indexOf(secilenDers);
+  if (dersIndex == -1) return [];
+
+  final konular = konularMap[dersIndex] ?? [];
+
+  if (query.isEmpty) return konular;
+  return konular
+      .where((k) => k.toLowerCase().contains(query.toLowerCase()))
+      .toList();
 });

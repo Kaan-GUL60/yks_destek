@@ -7,6 +7,12 @@
 		<key>CFBundleDisplayName</key>
 		<string>Kgsyks Destek</string>
 		<key>CFBundleExecutable</key>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Galerinizden soru seçebilmek için erişim iznin vermeniz gerekmetedir.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Kameranız ile soru resmi çekebilmek için kameranıza erişim izni vermeniz gerekmetedir.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Uygulama, video kaydı sırasında ses alabilmek için mikrofona erişmek istiyor.</string>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>

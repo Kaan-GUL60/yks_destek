@@ -1,9 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
+import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
+
 import 'package:kgsyks_destek/pages/soru_ekle/list_providers.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
+import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart';
+import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class SoruEkle extends ConsumerStatefulWidget {
   const SoruEkle({super.key});
@@ -31,6 +39,22 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     }
   }
 
+  void _resetForm() {
+    _controllerAciklama.clear();
+    ref.read(selectedDersProvider.notifier).state = null;
+    ref.read(selectedKonuProvider.notifier).state = null;
+    ref.read(selectedDurumProvider.notifier).state = null;
+    ref.read(selectedHataNedeniProvider.notifier).state = null;
+    ref
+        .read(imagePickerProvider.notifier)
+        .clearImage(); // image picker provider'ına clear metodu eklemen gerekebilir.
+    setState(() {
+      selectedDate = null;
+    });
+    // Kaydetme durumunu da sıfırla
+    ref.read(soruNotifierProvider.notifier).resetState();
+  }
+
   @override
   Widget build(BuildContext context) {
     // selectedCourseProvider'ı dinliyoruz.
@@ -38,7 +62,29 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     final String? secilenDurum = ref.watch(selectedDurumProvider);
     final String? secilenHataNedeni = ref.watch(selectedHataNedeniProvider);
     final String? secilenKonu = ref.watch(selectedKonuProvider);
+    //kayıt işlemler
+    final File? selectedImage = ref.watch(imagePickerProvider);
+    //kayıt durumu kontrolü için
+    final soruKayitState = ref.watch(soruNotifierProvider);
 
+    ref.listen<SoruKayitState>(soruNotifierProvider, (previous, next) {
+      if (next == SoruKayitState.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Soru başarıyla kaydedildi!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _resetForm(); // Formu temizle
+      } else if (next == SoruKayitState.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hata: Kayıt yapılamadı!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
     return Scaffold(
       appBar: AppBar(title: const Text("Soru Ekle"), centerTitle: true),
       // geri dön butonu gelmesi için Navigator.of(context).push(...) bu şekilde aç bu sayfayı
@@ -89,15 +135,18 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                       ),
                       child: GestureDetector(
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(
-                            "assets/images/soru_ekle.png",
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          // Duruma göre ya seçilen resmi ya da placeholder'ı göster
+                          child: selectedImage != null
+                              ? Image.file(selectedImage, fit: BoxFit.cover)
+                              : Image.asset(
+                                  'assets/images/soru_ekle.png', // pubspec.yaml'da belirttiğiniz resim
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                         onTap: () {
                           //açılır meni çağır galeri veya kamera ile resim getir burdan sonra
+                          _showImageSourceDialog(context, ref);
                         },
                       ),
                     ),
@@ -192,27 +241,90 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                                   ),
                                 ),
                               ),
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  // Geçerli, işlem devam edebilir
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Başarılı!")),
-                                  );
-                                } else {
-                                  // Hata varsa SnackBar ile uyar
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "Hata: 255 karakteri geçemez",
+                              onPressed:
+                                  soruKayitState == SoruKayitState.loading
+                                  ? null
+                                  : () async {
+                                      // 1. Önce gerekli alanların dolu olup olmadığını kontrol et
+                                      if (secilenDers == null ||
+                                          secilenKonu == null ||
+                                          secilenDurum == null ||
+                                          secilenHataNedeni == null ||
+                                          selectedImage == null) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Lütfen resim dahil tüm alanları seçin!",
+                                            ),
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                        );
+                                        return; // Eksik bilgi varsa işlemi durdur
+                                      }
+                                      if (!_formKey.currentState!.validate()) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Lütfen resim dahil tüm alanları seçin!',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      final File? selectedImage2 = ref.read(
+                                        imagePickerProvider,
+                                      );
+                                      if (selectedImage2 == null) return;
+
+                                      // 2. KALICI BİR YOL OLUŞTUR VE RESMİ KOPYALA
+                                      final appDir =
+                                          await getApplicationDocumentsDirectory();
+                                      final fileName = p.basename(
+                                        selectedImage2.path,
+                                      ); // Resmin orijinal adını alır (örn: image_picker_12345.jpg)
+                                      final savedImagePath = p.join(
+                                        appDir.path,
+                                        fileName,
+                                      ); // Yeni kalıcı yol (örn: .../Documents/image_picker_12345.jpg)
+
+                                      // Dosyayı geçici yoldan kalıcı yola kopyala
+                                      final File savedImage =
+                                          await selectedImage2.copy(
+                                            savedImagePath,
+                                          );
+
+                                      // 2. Verilerden SoruModel nesnesi oluştur
+                                      final yeniSoru = SoruModel(
+                                        ders: secilenDers,
+                                        konu: secilenKonu,
+                                        durum: secilenDurum,
+                                        hataNedeni: secilenHataNedeni,
+                                        imagePath:
+                                            savedImage.path, // Resmin yolunu al
+                                        aciklama: _controllerAciklama.text,
+                                        eklenmeTarihi: DateTime.now(),
+                                        hatirlaticiTarihi: selectedDate,
+                                      );
+
+                                      // 3. Provider aracılığıyla veritabanına kaydet
+                                      ref
+                                          .read(soruNotifierProvider.notifier)
+                                          .addSoru(yeniSoru);
+                                    },
+                              child: soruKayitState == SoruKayitState.loading
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    )
+                                  : const Text(
+                                      "Kaydet",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                  );
-                                }
-                              },
-                              child: Text(
-                                "Kaydet",
-                                style: TextStyle(fontWeight: FontWeight.w700),
-                              ),
                             ),
                           ),
                           SizedBox(height: 20),
@@ -260,6 +372,45 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
 
       // Butonun metnini provider'dan gelen değere göre belirliyoruz.
       child: Text(secilenAT ?? baslik),
+    );
+  }
+
+  Future<void> _showImageSourceDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Resim Kaynağını Seçin'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galeriden Seç'),
+                onTap: () {
+                  // Diyalogu kapat
+                  Navigator.of(context).pop();
+                  // Galeriden resim seçme fonksiyonunu tetikle
+                  ref.read(imagePickerProvider.notifier).pickImageFromGallery();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Kameradan Çek'),
+                onTap: () {
+                  // Diyalogu kapat
+                  Navigator.of(context).pop();
+                  // Kameradan resim çekme fonksiyonunu tetikle
+                  ref.read(imagePickerProvider.notifier).pickImageFromCamera();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -354,7 +505,6 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
       if (filtered == filteredDerslerProvider) {
         int konununNetlesmesi = dersler.indexOf(secilen);
         setFilterKonBasedOnX(konununNetlesmesi);
-        print("-------------------$filterKonular");
       }
     }
 
