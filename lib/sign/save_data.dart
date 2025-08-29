@@ -1,0 +1,42 @@
+// user_auth.dart
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class UserAuth {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Mail doğrulandıysa kullanıcı verilerini Firestore’a kaydeder
+  Future<void> saveUserData({
+    required String email,
+    required String uid,
+    required String profilePhotos,
+    required int sinif,
+    required int sinav,
+    required int alan,
+    required String kurumKodu,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception("Kullanıcı oturumu bulunamadı.");
+    }
+
+    await user.reload();
+    if (!user.emailVerified) {
+      throw Exception("Mail doğrulanmamış, kayıt yapılamaz.");
+    }
+
+    await _firestore.collection("users").doc(user.uid).set({
+      'email': email,
+      'password': uid,
+      'profilePhotos': profilePhotos,
+      'sinif': sinif,
+      'sinav': sinav,
+      'alan': alan,
+      'kurumKodu': kurumKodu,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+}
