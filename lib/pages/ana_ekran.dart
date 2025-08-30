@@ -49,44 +49,41 @@ class AnaEkran extends ConsumerWidget {
                   SizedBox(height: 5),
                   Text("<-Soru Sayısı->", style: TextStyle(fontSize: 20)),
                   SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: PieChart(
-                        PieChartData(
-                          sections: myList
-                              .map(
-                                (data) => PieChartSectionData(
-                                  value: data.value,
-                                  color: data.color,
-                                  title: "${data.title}\n${data.value.toInt()}",
-                                  radius: 70,
-                                  borderSide: BorderSide(
-                                    width: 3,
-                                    color: Colors.black,
-                                  ),
-                                  showTitle: true,
-                                  titleStyle: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: PieChart(
+                      PieChartData(
+                        sections: myList
+                            .map(
+                              (data) => PieChartSectionData(
+                                value: data.value,
+                                color: data.color,
+                                title: "${data.title}\n${data.value.toInt()}",
+                                radius: 70,
+                                borderSide: BorderSide(
+                                  width: 2,
+                                  color: Colors.black,
                                 ),
-                              )
-                              .toList(),
-                          centerSpaceRadius: 75,
-                          pieTouchData: PieTouchData(
-                            touchCallback: (FlTouchEvent e, PieTouchResponse? r) {
-                              if (r != null && r.touchedSection != null) {
-                                //seçileni işaretleme için riverpod kullan setstate yok.
-                                //touchIndex = r.touchedSection!.touchedSectionIndex;
-                              }
-                            },
-                          ),
-
-                          sectionsSpace: 4,
+                                showTitle: true,
+                                titleStyle: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        centerSpaceRadius: 75,
+                        pieTouchData: PieTouchData(
+                          touchCallback: (FlTouchEvent e, PieTouchResponse? r) {
+                            if (r != null && r.touchedSection != null) {
+                              //seçileni işaretleme için riverpod kullan setstate yok.
+                              //touchIndex = r.touchedSection!.touchedSectionIndex;
+                            }
+                          },
                         ),
+
+                        sectionsSpace: 4,
                       ),
                     ),
                   ),

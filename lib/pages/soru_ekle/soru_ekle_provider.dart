@@ -30,6 +30,17 @@ class SoruNotifier extends StateNotifier<SoruKayitState> {
     }
   }
 
+  Future<void> addBilgi(SoruModel soru) async {
+    try {
+      state = SoruKayitState.loading;
+      final dbHelper = _ref.read(databaseProvider);
+      await dbHelper.addSoru(soru);
+      state = SoruKayitState.success;
+    } catch (e) {
+      state = SoruKayitState.error;
+    }
+  }
+
   // Form temizlendiğinde veya sayfa kapandığında state'i sıfırlamak için
   void resetState() {
     state = SoruKayitState.initial;
@@ -38,6 +49,11 @@ class SoruNotifier extends StateNotifier<SoruKayitState> {
 
 // UI'ın kullanacağı StateNotifierProvider
 final soruNotifierProvider =
+    StateNotifierProvider<SoruNotifier, SoruKayitState>((ref) {
+      return SoruNotifier(ref);
+    });
+
+final bilgiNotifierProvider =
     StateNotifierProvider<SoruNotifier, SoruKayitState>((ref) {
       return SoruNotifier(ref);
     });

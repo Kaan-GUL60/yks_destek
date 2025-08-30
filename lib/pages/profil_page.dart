@@ -12,7 +12,14 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
-      body: const Center(child: Text('Merhaba, Profil Sayfasına Hoşgeldiniz!')),
+      body: Center(
+        child: Column(
+          children: [
+            Text("Merhaba"),
+            ElevatedButton(onPressed: () {}, child: Text("data")),
+          ],
+        ),
+      ),
     );
   }
 }

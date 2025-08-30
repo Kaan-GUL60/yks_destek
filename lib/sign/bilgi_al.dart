@@ -8,6 +8,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
+import 'package:kgsyks_destek/sign/yerel_kayit.dart';
 
 final textProvider = StateProvider<String>((ref) => "-");
 
@@ -22,6 +23,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
   // TextFormField'lardaki metni kontrol etmek için controller'lar.
 
   final _passwordController = TextEditingController();
+  final _userNameController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -45,6 +47,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     final selectedSinav2 = ref.watch(sinavProvider2);
 
     final selectedSinif = ref.watch(sinifProvider);
+
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -72,6 +75,23 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                 child: Column(
                   children: [
                     SizedBox(height: 10),
+                    TextFormField(
+                      controller: _userNameController,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Lütfen ad soyad giriniz.';
+                        }
+                        // E-posta formatı için RegExp
+                        return null; // Her şey yolundaysa null döndür.
+                      },
+                      decoration: InputDecoration(
+                        labelText: "Ad Soyad",
+
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+
                     _sinavSecim(
                       selectedSinav,
                       "Sınav Seçimi",
@@ -93,40 +113,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                           ],
                         ),
                         SizedBox(width: 10),
-                        Expanded(
-                          child: SegmentedButton<Option2>(
-                            segments: const <ButtonSegment<Option2>>[
-                              ButtonSegment(
-                                value: Option2.first,
-                                label: Text('SAY'),
-                                //icon: Icon(Icons.school_outlined),
-                              ),
-                              ButtonSegment(
-                                value: Option2.second,
-                                label: Text('EA'),
-                                //icon: Icon(Icons.assessment_outlined),
-                              ),
-                              ButtonSegment(
-                                value: Option2.third,
-                                label: Text('SÖZ'),
-                                //icon: Icon(Icons.assessment_outlined),
-                              ),
-                            ],
-                            selected: {ref.watch(sinavProvider2)},
-                            onSelectionChanged: (newSelection) {
-                              ref.read(sinavProvider2.notifier).state =
-                                  newSelection.first;
-                            },
-                            multiSelectionEnabled: false, // ✅ çok önemli
-                            style: ButtonStyle(
-                              shape: WidgetStatePropertyAll(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        _alanSecim(),
                       ],
                     ),
                     SizedBox(height: 20),
@@ -150,6 +137,40 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Expanded _alanSecim() {
+    return Expanded(
+      child: SegmentedButton<Option2>(
+        segments: const <ButtonSegment<Option2>>[
+          ButtonSegment(
+            value: Option2.first,
+            label: Text('SAY'),
+            //icon: Icon(Icons.school_outlined),
+          ),
+          ButtonSegment(
+            value: Option2.second,
+            label: Text('EA'),
+            //icon: Icon(Icons.assessment_outlined),
+          ),
+          ButtonSegment(
+            value: Option2.third,
+            label: Text('SÖZ'),
+            //icon: Icon(Icons.assessment_outlined),
+          ),
+        ],
+        selected: {ref.watch(sinavProvider2)},
+        onSelectionChanged: (newSelection) {
+          ref.read(sinavProvider2.notifier).state = newSelection.first;
+        },
+        multiSelectionEnabled: false,
+        style: ButtonStyle(
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          ),
         ),
       ),
     );
@@ -260,31 +281,62 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
 
   ElevatedButton _kayitTamamButton(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {
+      onPressed: () async {
         if (_formKey.currentState!.validate()) {
           // Eğer form geçerliyse, butona basma işlemini gerçekleştir
           //Firestore a kayıt işlem
           final selectedSinav = ref.read(sinavProvider);
           final selectedSinav2 = ref.read(sinavProvider);
           final selectedSinif = ref.read(sinifProvider);
+          final UserAuth auth = UserAuth();
+          int asd;
 
-          try {
-            UserAuth().saveUserData(
-              email: _auth.currentUser!.email!,
-              uid: _auth.currentUser!.uid,
-              profilePhotos: _auth.currentUser!.photoURL ?? "",
-              sinav: selectedSinav.index,
-              sinif: int.parse(selectedSinif),
-              alan: selectedSinav2.index,
-              kurumKodu: _passwordController.text.isEmpty
-                  ? ""
-                  : _passwordController.text,
-            );
-            router.goNamed(AppRoute.anaekran.name);
-          } catch (e) {
-            ScaffoldMessenger.of(
+          if (_passwordController.text.isEmpty) {
+            _userKayit(
+              _userNameController.text,
+              selectedSinav,
+              selectedSinif,
+              selectedSinav2,
               context,
-            ).showSnackBar(SnackBar(content: Text("Hata: ${e.toString()}")));
+              false,
+            );
+            return;
+          }
+          asd = await auth.checkLicenseKey("12345678");
+          final ctx = context;
+          if (!ctx.mounted) return;
+          switch (asd) {
+            case 4:
+              _userKayit(
+                _userNameController.text,
+                selectedSinav,
+                selectedSinif,
+                selectedSinav2,
+                context,
+                true,
+              );
+
+              break;
+            case 3:
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Üzgünüz, maalesef girdiğiniz kodun kullanım hakkı dolmuş.',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              break;
+            case 2:
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Üzgünüz, maalesef girdiğiniz kod geçersiz'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              break;
+            default:
+            //bilinmeyen bir hata oldu
           }
 
           //, sinif: sinif, sinav: sinav, alan: alan, kurumKodu: kurumKodu)
@@ -298,5 +350,54 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
       },
       child: Text("Kayıtı Tamamla"),
     );
+  }
+
+  void _userKayit(
+    String userName,
+    Option selectedSinav,
+    String selectedSinif,
+    Option selectedSinav2,
+    BuildContext context,
+    bool isPro,
+  ) {
+    try {
+      UserAuth().saveUserData(
+        userName: userName,
+        email: _auth.currentUser!.email!,
+        uid: _auth.currentUser!.uid,
+        profilePhotos: _auth.currentUser!.photoURL ?? "",
+        sinav: selectedSinav.index,
+        sinif: int.parse(selectedSinif),
+        alan: selectedSinav2.index,
+        kurumKodu: _passwordController.text.isEmpty
+            ? ""
+            : _passwordController.text,
+        isPro: isPro,
+      );
+      final yeniKullanici = KullaniciModel(
+        uid: _auth.currentUser!.uid, // Genellikle Firebase Auth'dan alınır
+        userName: userName,
+        email: _auth.currentUser!.email!,
+        profilePhotos:
+            _auth.currentUser!.photoURL ??
+            "", // Kaydedilen profil fotoğrafının yolu
+        sinif: int.parse(
+          selectedSinif,
+        ), // Örneğin bir dropdown'dan gelen int değer (örn: 12)
+        sinav: selectedSinav
+            .index, // Örneğin bir dropdown'dan gelen int değer (örn: 1)
+        alan: selectedSinav2
+            .index, // Örneğin bir dropdown'dan gelen int değer (örn: 2)
+        kurumKodu: _passwordController.text.isEmpty
+            ? ""
+            : _passwordController.text,
+        isPro: isPro, // Örneğin bir checkbox'tan gelen bool değer (true/false)
+      );
+      router.goNamed(AppRoute.anaekran.name);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Hata: ${e.toString()}")));
+    }
   }
 }

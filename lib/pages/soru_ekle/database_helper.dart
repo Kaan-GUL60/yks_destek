@@ -57,9 +57,6 @@ class DatabaseHelper {
       'sorular',
       orderBy: "eklenmeTarihi DESC", // Son eklenen en üstte olsun
     );
-    print(
-      "------------------------${result.map((json) => SoruModel.fromMap(json)).toList()}",
-    );
 
     return result.map((json) => SoruModel.fromMap(json)).toList();
   }

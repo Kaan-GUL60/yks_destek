@@ -7,8 +7,26 @@ class UserAuth {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Firestore'dan kullanıcı verilerini okur
+  Future<int> checkLicenseKey(String key) async {
+    final docRef = _firestore.collection("lisansKeys").doc("lisansKeys");
+    final doc = await docRef.get();
+
+    if (!doc.exists) return 1;
+
+    final data = doc.data() as Map<String, dynamic>;
+    if (!data.containsKey(key)) return 2;
+
+    final currentValue = data[key] as int;
+    if (currentValue <= 0) return 3;
+
+    await docRef.update({key: currentValue - 1});
+    return 4;
+  }
+
   /// Mail doğrulandıysa kullanıcı verilerini Firestore’a kaydeder
   Future<void> saveUserData({
+    required String userName,
     required String email,
     required String uid,
     required String profilePhotos,
@@ -16,6 +34,7 @@ class UserAuth {
     required int sinav,
     required int alan,
     required String kurumKodu,
+    required bool isPro,
   }) async {
     final user = _auth.currentUser;
 
@@ -29,13 +48,15 @@ class UserAuth {
     }
 
     await _firestore.collection("users").doc(user.uid).set({
+      'userName': userName,
       'email': email,
-      'password': uid,
+      'uid': uid,
       'profilePhotos': profilePhotos,
       'sinif': sinif,
       'sinav': sinav,
       'alan': alan,
       'kurumKodu': kurumKodu,
+      'isPro': isPro,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
