@@ -37,7 +37,8 @@ class KullaniciNotifier extends StateNotifier<KullaniciState> {
       state = KullaniciState.success;
       // ÖNEMLİ: Veri değiştiği için, kullanıcı verisini çeken
       // 'kullaniciProvider'ı yenileyerek UI'ın güncellenmesini sağlıyoruz.
-      _ref.refresh(kullaniciProvider);
+      _ref.invalidate(kullaniciProvider);
+      _ref.read(kullaniciProvider);
     } catch (e) {
       state = KullaniciState.error;
     }
@@ -51,7 +52,8 @@ class KullaniciNotifier extends StateNotifier<KullaniciState> {
       await dbHelper.deleteKullanici();
       state = KullaniciState.success;
       // Veri silindiği için UI'ı güncellemek amacıyla provider'ı yeniliyoruz.
-      _ref.refresh(kullaniciProvider);
+      _ref.invalidate(kullaniciProvider);
+      _ref.read(kullaniciProvider);
     } catch (e) {
       state = KullaniciState.error;
     }
@@ -70,7 +72,6 @@ final kullaniciNotifierProvider =
     StateNotifierProvider<KullaniciNotifier, KullaniciState>((ref) {
       return KullaniciNotifier(ref);
     });
-
 // 5. FutureProvider
 // Veritabanından kullanıcı verisini asenkron olarak "okumak" için kullanılır.
 // UI'da kullanıcı bilgilerini (isim, email vb.) göstermek için bu provider'ı

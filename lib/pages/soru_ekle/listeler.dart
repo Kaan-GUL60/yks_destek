@@ -304,6 +304,20 @@ final konularMap = {
 };
 // Kullanımı:
 // setFilterKonBasedOnX(x);
+// ... diğer listelerin altında
 
+final Map<String, List<String>> konuMap = {
+  'Türkçe': konuListTurkce,
+  'Matematik': konuListMatematik,
+  'Geometri': konuListGeometri,
+  'Fizik': konuListFizik,
+  'Kimya': konuListKimya,
+  'Biyoloji': konuListBiyoloji,
+  'Tarih': konuListTarih,
+  'Coğrafya': konuListCografya,
+  // 'dersler' listesindeki 'Din Kültürü' ile 'konuListDin'i eşleştiriyoruz.
+  'Din Kültürü': konuListDin,
+  'Felsefe': konuListFelsefe,
+};
 // Kullanımı:
 // global filter_kon = getFilteredKonuList(x);

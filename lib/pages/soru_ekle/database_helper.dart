@@ -60,4 +60,21 @@ class DatabaseHelper {
 
     return result.map((json) => SoruModel.fromMap(json)).toList();
   }
+
+  // DatabaseHelper.dart içinde
+
+  Future<SoruModel?> getSoru(int id) async {
+    final db = await instance.database;
+
+    // 'where' ve 'whereArgs' kullanarak sadece belirli bir ID'ye sahip veriyi sorgula
+    final maps = await db.query('sorular', where: 'id = ?', whereArgs: [id]);
+
+    if (maps.isNotEmpty) {
+      // Sorgu sonucu boş değilse ilk elemanı SoruModel'e çevirip dön
+      return SoruModel.fromMap(maps.first);
+    } else {
+      // Sorgu sonucu boşsa null dön
+      return null;
+    }
+  }
 }

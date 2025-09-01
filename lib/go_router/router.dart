@@ -1,12 +1,24 @@
 import 'package:go_router/go_router.dart';
 import 'package:kgsyks_destek/ana_ekran/home.dart';
+import 'package:kgsyks_destek/pages/favoriler_page/favoriler_page.dart';
 import 'package:kgsyks_destek/sign/bilgi_al.dart';
 import 'package:kgsyks_destek/sign/sign_in.dart';
 import 'package:kgsyks_destek/sign/sign_up.dart';
+import 'package:kgsyks_destek/soru_viewer/soru_viewer.dart';
 import 'package:kgsyks_destek/splash_screen/splash_screen.dart';
 
 // Route names as enum
-enum AppRoute { home, signIn, bilgiAl, signUp, anaekran, profile, settings }
+enum AppRoute {
+  home,
+  signIn,
+  bilgiAl,
+  signUp,
+  anaekran,
+  profile,
+  settings,
+  soruViewer,
+  favorilerPage,
+}
 
 // Route paths as extension
 extension AppRouteExtension on AppRoute {
@@ -26,6 +38,10 @@ extension AppRouteExtension on AppRoute {
         return '/profile';
       case AppRoute.settings:
         return '/settings';
+      case AppRoute.soruViewer:
+        return '/soruViewer/:id';
+      case AppRoute.favorilerPage:
+        return '/favorilerPage';
     }
   }
 }
@@ -57,6 +73,22 @@ final GoRouter router = GoRouter(
       path: AppRoute.anaekran.path,
       name: AppRoute.anaekran.name,
       builder: (context, state) => HomePage(),
+    ),
+    GoRoute(
+      path: AppRoute.soruViewer.path,
+      name: AppRoute.soruViewer.name,
+      builder: (context, state) {
+        // ID parametresini state'den al ve int'e dönüştür
+        final int soruId = int.parse(state.pathParameters['id']!);
+
+        // SoruDetayEkrani widget'ını ID ile oluştur
+        return SoruViewer(soruId: soruId);
+      },
+    ),
+    GoRoute(
+      path: AppRoute.favorilerPage.path,
+      name: AppRoute.favorilerPage.name,
+      builder: (context, state) => FavorilerPage(),
     ),
   ],
 );

@@ -371,7 +371,11 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
       },
 
       // Butonun metnini provider'dan gelen değere göre belirliyoruz.
-      child: Text(secilenAT ?? baslik),
+      child: Text(
+        (secilenAT != null && secilenAT.length > 20)
+            ? "${secilenAT.substring(0, 20)}..."
+            : secilenAT ?? baslik,
+      ),
     );
   }
 

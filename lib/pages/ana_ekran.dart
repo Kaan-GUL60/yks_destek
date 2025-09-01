@@ -1,12 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kgsyks_destek/sign/bilgi_ekle_provider.dart';
 
 class AnaEkran extends ConsumerWidget {
   const AnaEkran({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final kullaniciAsyncValue = ref.watch(kullaniciProvider);
     final myList = [
       MyData(value: 10, color: Colors.amber, title: "Türkçe"),
       MyData(value: 10, color: Colors.blue, title: "Matematik"),
@@ -28,7 +30,22 @@ class AnaEkran extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("<-Kullanıcı Adı->", style: TextStyle(fontSize: 20)),
+                kullaniciAsyncValue.when(
+                  data: (kullanici) {
+                    // Kullanıcı verisi varsa `userName`'i, yoksa 'Misafir' gösterir.
+                    final userName = kullanici?.userName ?? 'Misafir';
+                    return Text(
+                      userName,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
+                  loading: () =>
+                      const CircularProgressIndicator(), // Veri yüklenirken
+                  error: (err, stack) => Text('Hata: $err'), // Hata oluştuğunda
+                ),
                 Text("<-Puan->", style: TextStyle(fontSize: 20)),
               ],
             ),
