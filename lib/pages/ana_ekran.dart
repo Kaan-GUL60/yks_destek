@@ -34,6 +34,7 @@ class AnaEkran extends ConsumerWidget {
                   data: (kullanici) {
                     // Kullanıcı verisi varsa `userName`'i, yoksa 'Misafir' gösterir.
                     final userName = kullanici?.userName ?? 'Misafir';
+
                     return Text(
                       userName,
                       style: TextStyle(

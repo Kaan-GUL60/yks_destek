@@ -35,7 +35,7 @@ class KullaniciModel {
       'alan': alan,
       // DateTime nesnelerini veritabanı için String'e çeviriyoruz
       'kurumKodu': kurumKodu,
-      'isPro': isPro,
+      'isPro': isPro ? 1 : 0,
     };
   }
 
@@ -50,7 +50,7 @@ class KullaniciModel {
       alan: map['alan'],
       // Veritabanından okurken String'i tekrar DateTime'a çeviriyoruz
       kurumKodu: map['kurumKodu'],
-      isPro: map['isPro'],
+      isPro: map['isPro'] == 1,
     );
   }
 }

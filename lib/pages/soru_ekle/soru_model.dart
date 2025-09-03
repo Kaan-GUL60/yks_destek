@@ -6,6 +6,7 @@ class SoruModel {
   final String konu;
   final String durum;
   final String hataNedeni;
+  final String soruCevap;
   final String? aciklama;
   final String imagePath; // Resmin dosya yolunu saklayacağız
   final DateTime eklenmeTarihi;
@@ -18,6 +19,7 @@ class SoruModel {
     required this.konu,
     required this.durum,
     required this.hataNedeni,
+    required this.soruCevap,
     this.aciklama,
     required this.imagePath,
     required this.eklenmeTarihi,
@@ -31,6 +33,7 @@ class SoruModel {
       'konu': konu,
       'durum': durum,
       'hataNedeni': hataNedeni,
+      'soruCevap': soruCevap,
       'aciklama': aciklama,
       'imagePath': imagePath,
       // DateTime nesnelerini veritabanı için String'e çeviriyoruz
@@ -46,6 +49,7 @@ class SoruModel {
       konu: map['konu'],
       durum: map['durum'],
       hataNedeni: map['hataNedeni'],
+      soruCevap: map['soruCevap'],
       aciklama: map['aciklama'],
       imagePath: map['imagePath'],
       // Veritabanından okurken String'i tekrar DateTime'a çeviriyoruz

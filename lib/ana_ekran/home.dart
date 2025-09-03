@@ -11,19 +11,33 @@ import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
-  final List<Widget> pages = const [
-    AnalizPage(),
-    SoruEkle(),
-    AnaEkran(),
-    FavorilerPage(),
-    ProfilePage(),
-  ];
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(bottomNavIndexProvider);
 
+    Widget getPage(int index) {
+      switch (index) {
+        case 0:
+          return AnalizPage(key: UniqueKey());
+        case 1:
+          return SoruEkle(key: UniqueKey());
+        case 2:
+          return AnaEkran(key: UniqueKey());
+        case 3:
+          return FavorilerPage(key: UniqueKey());
+        case 4:
+          return ProfilePage(key: UniqueKey());
+        default:
+          return AnaEkran(key: UniqueKey());
+      }
+    }
+
     return Scaffold(
-      body: pages[selectedIndex],
+      body: ProviderScope(
+        // ← ➊
+        key: UniqueKey(), //     Her build’de yeni bir scope
+        child: getPage(selectedIndex),
+      ),
       bottomNavigationBar: const CustomBottomNavigationBar(),
     );
   }

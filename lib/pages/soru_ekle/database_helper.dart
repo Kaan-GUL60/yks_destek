@@ -32,6 +32,7 @@ class DatabaseHelper {
         konu $textType,
         durum $textType,
         hataNedeni $textType,
+        soruCevap $textType,
         aciklama $nullableTextType,
         imagePath $textType,
         eklenmeTarihi $textType,

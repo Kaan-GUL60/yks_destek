@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
 
@@ -62,6 +63,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     final String? secilenDurum = ref.watch(selectedDurumProvider);
     final String? secilenHataNedeni = ref.watch(selectedHataNedeniProvider);
     final String? secilenKonu = ref.watch(selectedKonuProvider);
+
     //kayıt işlemler
     final File? selectedImage = ref.watch(imagePickerProvider);
     //kayıt durumu kontrolü için
@@ -179,6 +181,21 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                       ),
                     ),
 
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15.0,
+                        vertical: 8,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Text(
+                          "Cevap Seçiniz: ",
+
+                          textAlign: TextAlign.left,
+                        ),
+                      ),
+                    ),
+                    _soruCevabSecim(),
                     SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -246,6 +263,9 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                                   ? null
                                   : () async {
                                       // 1. Önce gerekli alanların dolu olup olmadığını kontrol et
+                                      final secilenSoruCevap = ref.read(
+                                        soruCevabiProvider,
+                                      );
                                       if (secilenDers == null ||
                                           secilenKonu == null ||
                                           secilenDurum == null ||
@@ -303,6 +323,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                                         konu: secilenKonu,
                                         durum: secilenDurum,
                                         hataNedeni: secilenHataNedeni,
+                                        soruCevap: secilenSoruCevap.name,
                                         imagePath:
                                             savedImage.path, // Resmin yolunu al
                                         aciklama: _controllerAciklama.text,
@@ -336,6 +357,52 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  SegmentedButton _soruCevabSecim() {
+    return SegmentedButton<OptionSoruCevabi>(
+      segments: const <ButtonSegment<OptionSoruCevabi>>[
+        ButtonSegment(
+          value: OptionSoruCevabi.A,
+          label: Text('A'),
+          //icon: Icon(Icons.school_outlined),
+        ),
+        ButtonSegment(
+          value: OptionSoruCevabi.B,
+          label: Text('B'),
+          //icon: Icon(Icons.assessment_outlined),
+        ),
+        ButtonSegment(
+          value: OptionSoruCevabi.C,
+          label: Text('C'),
+          //icon: Icon(Icons.assessment_outlined),
+        ),
+        ButtonSegment(
+          value: OptionSoruCevabi.D,
+          label: Text('D'),
+          //icon: Icon(Icons.assessment_outlined),
+        ),
+        ButtonSegment(
+          value: OptionSoruCevabi.E,
+          label: Text('E'),
+          //icon: Icon(Icons.assessment_outlined),
+        ),
+      ],
+      selected: {ref.watch(soruCevabiProvider)},
+
+      onSelectionChanged: (newSelection) {
+        ref.read(soruCevabiProvider.notifier).state = newSelection.first;
+      },
+      multiSelectionEnabled: false,
+      style: ButtonStyle(
+        backgroundColor: WidgetStatePropertyAll(
+          Theme.of(context).scaffoldBackgroundColor,
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
       ),
     );

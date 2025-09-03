@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
+import 'package:kgsyks_destek/sign/bilgi_database_helper.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:kgsyks_destek/sign/yerel_kayit.dart';
 
@@ -286,7 +287,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
           // Eğer form geçerliyse, butona basma işlemini gerçekleştir
           //Firestore a kayıt işlem
           final selectedSinav = ref.read(sinavProvider);
-          final selectedSinav2 = ref.read(sinavProvider);
+          final selectedSinav2 = ref.read(sinavProvider2);
           final selectedSinif = ref.read(sinifProvider);
           final UserAuth auth = UserAuth();
           int asd;
@@ -302,7 +303,9 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
             );
             return;
           }
-          asd = await auth.checkLicenseKey("12345678");
+          asd = await auth.checkLicenseKey(
+            _passwordController.text.isEmpty ? "" : _passwordController.text,
+          );
           final ctx = context;
           if (!ctx.mounted) return;
           switch (asd) {
@@ -356,10 +359,10 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     String userName,
     Option selectedSinav,
     String selectedSinif,
-    Option selectedSinav2,
+    Option2 selectedSinav2,
     BuildContext context,
     bool isPro,
-  ) {
+  ) async {
     try {
       UserAuth().saveUserData(
         userName: userName,
@@ -393,6 +396,9 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
             : _passwordController.text,
         isPro: isPro, // Örneğin bir checkbox'tan gelen bool değer (true/false)
       );
+      await KullaniciDatabaseHelper.instance.saveKullanici(yeniKullanici);
+      final ctx = context;
+      if (!ctx.mounted) return;
       router.goNamed(AppRoute.anaekran.name);
     } catch (e) {
       ScaffoldMessenger.of(

@@ -36,8 +36,6 @@ class KullaniciDatabaseHelper {
     const primaryKeyType =
         'TEXT PRIMARY KEY NOT NULL'; // uid benzersiz olduğu için Primary Key olarak kullanıyoruz.
     const intType = 'INTEGER NOT NULL';
-    const boolType =
-        'INTEGER NOT NULL'; // SQLite'ta boolean, 0 (false) veya 1 (true) olarak saklanır.
 
     // 'kullanici' adında bir tablo oluşturuyoruz.
     await db.execute('''
@@ -50,7 +48,7 @@ class KullaniciDatabaseHelper {
         sinav $intType,
         alan $intType,
         kurumKodu $textType,
-        isPro $boolType
+        isPro $intType
       )
     ''');
   }
@@ -77,11 +75,10 @@ class KullaniciDatabaseHelper {
     final db = await instance.database;
     final maps = await db.query(
       'kullanici',
-      limit: 1, // Sadece bir kayıt getirmesi yeterli.
+      // Sadece bir kayıt getirmesi yeterli.
     );
-
     if (maps.isNotEmpty) {
-      // Veritabanından gelen map'i tekrar KullaniciModel nesnesine çeviriyoruz.
+      // Veritabanından gelen map'i tekrar KullaniciModel nesnesine çeviriyoruz
       return KullaniciModel.fromMap(maps.first);
     } else {
       return null;
