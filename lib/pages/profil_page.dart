@@ -13,11 +13,30 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: Center(
-        child: Column(
-          children: [
-            Text("Merhaba"),
-            ElevatedButton(onPressed: () {}, child: Text("data")),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text("Çok yakında..."),
+              SizedBox(height: 15),
+              Text(
+                textAlign: TextAlign.center,
+                "Uygulamamız şuanda kısıtlı fonksiyonlarla kapalı alpha sürümündedir. ",
+              ),
+              SizedBox(height: 15),
+              Text(
+                textAlign: TextAlign.center,
+                "Sorun yaşıyorsanız uygulamanın en güncel sürümünü kullanıp kullanmadığınızdan emin olunuz.",
+              ),
+              SizedBox(height: 15),
+              Text(
+                textAlign: TextAlign.center,
+                "Uygulama en çok 2 günde bir girerek aktifliğinizi korursanız memnun oluruz.",
+              ),
+            ],
+          ),
         ),
       ),
     );

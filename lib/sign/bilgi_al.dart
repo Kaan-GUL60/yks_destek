@@ -11,7 +11,7 @@ import 'package:kgsyks_destek/sign/bilgi_database_helper.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:kgsyks_destek/sign/yerel_kayit.dart';
 
-final textProvider = StateProvider<String>((ref) => "-");
+final textProvider = StateProvider.autoDispose<String>((ref) => "-");
 
 class BilgiAl extends ConsumerStatefulWidget {
   const BilgiAl({super.key});
@@ -199,7 +199,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
         return null;
       },
       decoration: InputDecoration(
-        labelText: "Varsa Kullanıcı kodu",
+        labelText: "Kullanıcı kodu(yoksa boş bırakın)",
         hintText: "XXXXXXXX",
 
         border: OutlineInputBorder(),
@@ -400,7 +400,17 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
       final ctx = context;
       if (!ctx.mounted) return;
       router.goNamed(AppRoute.anaekran.name);
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
+      String mesaj;
+      if (e.code == "user-not-found") {
+        mesaj = "Kullanıcı bulunamadı.";
+      } else if (e.code == "invalid-email") {
+        mesaj = "Geçersiz email.";
+      } else if (e.toString().contains("FirebaseAuth'ta mevcut değil")) {
+        mesaj = "Lütfen tekrar kayıt olunuz.";
+      } else {
+        mesaj = "Hata: ${e.message}";
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Hata: ${e.toString()}")));

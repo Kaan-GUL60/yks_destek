@@ -4,10 +4,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/pages/favoriler_page/sorular_list_provider.dart';
 
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
+import 'package:kgsyks_destek/sign/save_data.dart';
 
 class FavorilerPage extends ConsumerWidget {
   const FavorilerPage({super.key});
@@ -16,7 +18,7 @@ class FavorilerPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Favoriler'),
+        title: const Text('Sorular'),
         // elevation: 0, // AppBar'ın varsayılan stilini temadan alması daha iyi
       ),
       body: const Column(
@@ -124,7 +126,7 @@ class _FilterControls extends ConsumerWidget {
               children: [
                 FilterButton(
                   label: 'Hepsi',
-                  count: 10,
+                  count: 0,
                   isSelected: filterState['durum'] == DurumFiltresi.hepsi,
                   // Temanın ana rengini kullanıyoruz
                   color: Colors.blueGrey,
@@ -133,7 +135,7 @@ class _FilterControls extends ConsumerWidget {
                 const SizedBox(width: 8),
                 FilterButton(
                   label: 'Yanlışlarım',
-                  count: 60,
+                  count: 0,
                   isSelected: filterState['durum'] == DurumFiltresi.yanlislarim,
                   // Temanın 'hata' rengini kullanıyoruz
                   color: Colors.blueGrey,
@@ -142,7 +144,7 @@ class _FilterControls extends ConsumerWidget {
                 const SizedBox(width: 8),
                 FilterButton(
                   label: 'Boşlarım',
-                  count: 38,
+                  count: 0,
                   isSelected: filterState['durum'] == DurumFiltresi.boslarim,
                   // Temanın ikincil rengini kullanıyoruz
                   color: Colors.blueGrey,
@@ -151,7 +153,7 @@ class _FilterControls extends ConsumerWidget {
                 const SizedBox(width: 8),
                 FilterButton(
                   label: 'Tamamladıklarım',
-                  count: 18,
+                  count: 0,
                   isSelected:
                       filterState['durum'] == DurumFiltresi.tamamladiklarim,
                   // Statik Yeşil yerine sistemin kendi renklerinden birini atıyoruz
@@ -202,7 +204,8 @@ class _SorularListesi extends ConsumerWidget {
 // TEK BİR SORU KARTI WIDGET'I
 class _SoruCard extends StatelessWidget {
   final SoruModel soru;
-  const _SoruCard({required this.soru});
+  _SoruCard({required this.soru});
+  final UserAuth auther = UserAuth();
 
   // Duruma göre renk döndüren fonksiyon.
   // Bu renkler (kırmızı, yeşil) evrensel durum bildirdiği için
@@ -221,6 +224,10 @@ class _SoruCard extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         print("Soru ID: ${soru.id} tıklandı.");
+        await auther.soruSayiArtir("soruAcmaSayisi");
+        AnalyticsService().trackCount("soru_acma", "favoriler_page");
+        final ctx = context;
+        if (!ctx.mounted) return;
         context.pushNamed(
           AppRoute.soruViewer.name,
           pathParameters: {"id": soru.id.toString()},
@@ -295,8 +302,9 @@ class _SoruCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
+
                   // Icon rengi de otomatik olarak temadan gelir (IconTheme)
-                  const Icon(Icons.favorite_border),
+                  Icon(Icons.chevron_right, color: theme.iconTheme.color),
                 ],
               ),
             ],
@@ -338,7 +346,7 @@ class FilterButton extends StatelessWidget {
         // Buton üzerindeki yazı rengi, arkaplan rengine göre otomatik ayarlanır.
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      child: Text('$label ($count)'),
+      child: Text(label), //($count)  bu countu ekleyeblirisin sonra
     );
   }
 }

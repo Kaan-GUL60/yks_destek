@@ -1,16 +1,16 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
-
+import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
-
 import 'package:kgsyks_destek/pages/soru_ekle/list_providers.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
+import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -69,6 +69,8 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     //kayıt durumu kontrolü için
     final soruKayitState = ref.watch(soruNotifierProvider);
 
+    final UserAuth auth = UserAuth();
+
     ref.listen<SoruKayitState>(soruNotifierProvider, (previous, next) {
       if (next == SoruKayitState.success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,9 +94,10 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
       // geri dön butonu gelmesi için Navigator.of(context).push(...) bu şekilde aç bu sayfayı
       body: SingleChildScrollView(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 50),
-
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.only(left: 15.0, right: 15),
               child: Card.outlined(
@@ -103,9 +106,9 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(
-                        left: 10,
-                        right: 10,
-                        top: 5,
+                        left: 15,
+                        right: 15,
+                        top: 10,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,9 +134,9 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(
-                        left: 10,
-                        right: 10,
-                        top: 5,
+                        left: 15,
+                        right: 15,
+                        top: 10,
                       ),
                       child: GestureDetector(
                         child: ClipRRect(
@@ -154,9 +157,9 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(
-                        left: 10,
-                        right: 10,
-                        top: 5,
+                        left: 15,
+                        right: 15,
+                        top: 10,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -184,7 +187,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 15.0,
-                        vertical: 8,
+                        vertical: 10,
                       ),
                       child: SizedBox(
                         width: double.infinity,
@@ -311,11 +314,26 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                                         fileName,
                                       ); // Yeni kalıcı yol (örn: .../Documents/image_picker_12345.jpg)
 
-                                      // Dosyayı geçici yoldan kalıcı yola kopyala
-                                      final File savedImage =
-                                          await selectedImage2.copy(
-                                            savedImagePath,
+                                      // OPTİMİZASYON: Resmi kaydetmeden önce sıkıştır
+
+                                      final compressedImageBytes =
+                                          await FlutterImageCompress.compressWithFile(
+                                            selectedImage2.path,
+                                            quality:
+                                                88, // Sıkıştırma kalitesini ayarla (0-100 arası)
                                           );
+
+                                      if (compressedImageBytes == null) {
+                                        return;
+                                      }
+
+                                      // Dosyayı geçici yoldan kalıcı yola kopyala
+                                      final File savedImage = File(
+                                        savedImagePath,
+                                      );
+                                      await savedImage.writeAsBytes(
+                                        compressedImageBytes,
+                                      );
 
                                       // 2. Verilerden SoruModel nesnesi oluştur
                                       final yeniSoru = SoruModel(
@@ -330,6 +348,12 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                                         eklenmeTarihi: DateTime.now(),
                                         hatirlaticiTarihi: selectedDate,
                                       );
+
+                                      auth.soruSayiArtir("soruSayi");
+                                      AnalyticsService().trackCount(
+                                        "buttonClick",
+                                        "soru_eklendi",
+                                      ); // soru sayıyor
 
                                       // 3. Provider aracılığıyla veritabanına kaydet
                                       ref

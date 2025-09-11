@@ -176,22 +176,21 @@ class _SignUpState extends ConsumerState<SignUp> {
 
   Future<void> checkEmailVerification() async {
     // Kullanıcı doğrulamayı yapana kadar bu döngüyü çalıştırın
-    while (true) {
-      // E-posta doğrulama linkine tıkladıktan sonra firebase Auth'u günceller
-      await FirebaseAuth.instance.currentUser!.reload();
-      final user = FirebaseAuth.instance.currentUser;
 
-      if (user!.emailVerified) {
-        // Doğrulama yapıldı, döngüyü durdur
+    // E-posta doğrulama linkine tıkladıktan sonra firebase Auth'u günceller
+    await FirebaseAuth.instance.currentUser!.reload();
+    final user = FirebaseAuth.instance.currentUser;
 
-        break;
-      } else {
-        ref.read(textProvider.notifier).state = "Henüz doğrulama yapılmadı.";
-      }
+    if (user!.emailVerified) {
+      // Doğrulama yapıldı, döngüyü durdur
 
-      // Her 3 saniyede bir kontrol et (kullanıcının linke tıklamasını beklerken)
-      await Future.delayed(const Duration(seconds: 2));
+      return;
+    } else {
+      ref.read(textProvider.notifier).state = "Henüz doğrulama yapılmadı.";
     }
+
+    // Her 3 saniyede bir kontrol et (kullanıcının linke tıklamasını beklerken)
+    await Future.delayed(const Duration(seconds: 1));
   }
 
   void openSheet() {
@@ -313,6 +312,9 @@ class _SignUpState extends ConsumerState<SignUp> {
         message = 'Geçersiz e-posta adresi.';
       } else if (e.code == 'weak-password') {
         message = 'Şifre çok zayıf.';
+      } else if (e.code == 'too-many-requests') {
+        message =
+            'Çok fazla deneme yapıldı, lütfen daha sonra tekrar deneyiniz.';
       } else {
         message = 'Bir hata oluştu. Lütfen tekrar deneyin.';
       }

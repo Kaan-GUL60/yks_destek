@@ -1,11 +1,33 @@
 // user_auth.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserAuth {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<bool> checkUserVeri(String uid) async {
+    final docRef = _firestore.collection("users").doc(uid);
+    final doc = await docRef.get();
+
+    if (!doc.exists) return false;
+    return true;
+  }
+
+  Future<void> soruSayiArtir(String arttirilacakDeger) async {
+    final user = _auth.currentUser;
+
+    // Eğer bir kullanıcı oturum açmadıysa (yani `user` null ise), işlemi sonlandırın
+    if (user == null) {
+      return;
+    }
+    // Kullanıcı oturum açtıysa, UID'sine güvenle erişebilirsiniz
+    final docRef = _firestore.collection("users").doc(user.uid);
+
+    await docRef.set({
+      arttirilacakDeger: FieldValue.increment(1),
+    }, SetOptions(merge: true));
+  }
 
   /// Firestore'dan kullanıcı verilerini okur
   Future<int> checkLicenseKey(String key) async {
@@ -42,7 +64,18 @@ class UserAuth {
       throw Exception("Kullanıcı oturumu bulunamadı.");
     }
 
-    await user.reload();
+    try {
+      await user.reload();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == "user-not-found") {
+        throw Exception("Bu kullanıcı FirebaseAuth'ta mevcut değil.");
+      }
+      rethrow;
+    }
+
+    if (!user.emailVerified) {
+      throw Exception("Mail doğrulanmamış, kayıt yapılamaz.");
+    }
     if (!user.emailVerified) {
       throw Exception("Mail doğrulanmamış, kayıt yapılamaz.");
     }

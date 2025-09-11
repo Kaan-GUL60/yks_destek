@@ -9,19 +9,19 @@ import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart'; // Model yolu
 enum DurumFiltresi { hepsi, yanlislarim, boslarim, tamamladiklarim }
 
 // 1. VERİTABANI SAĞLAYICI (Aynen kalıyor)
-final soruDatabaseProvider = Provider<DatabaseHelper>((ref) {
+final soruDatabaseProvider = Provider.autoDispose<DatabaseHelper>((ref) {
   return DatabaseHelper.instance;
 });
 
 // 2. TÜM SORULARI ÇEKEN PROVIDER (Aynen kalıyor)
-final allSorularProvider = FutureProvider<List<SoruModel>>((ref) {
+final allSorularProvider = FutureProvider.autoDispose<List<SoruModel>>((ref) {
   final dbHelper = ref.watch(soruDatabaseProvider);
   return dbHelper.getAllSorular();
 });
 
 // 3. FİLTRE DURUMUNU TUTAN STATE NOTIFIER (Aynen kalıyor)
 class SorularFilterNotifier extends StateNotifier<Map<String, dynamic>> {
-  SorularFilterNotifier()
+  SorularFilterNotifier.autoDispose()
     : super({'ders': null, 'konu': null, 'durum': DurumFiltresi.hepsi});
 
   void setDers(String? ders) {
@@ -38,8 +38,11 @@ class SorularFilterNotifier extends StateNotifier<Map<String, dynamic>> {
 }
 
 final sorularFilterProvider =
-    StateNotifierProvider<SorularFilterNotifier, Map<String, dynamic>>((ref) {
-      return SorularFilterNotifier();
+    StateNotifierProvider.autoDispose<
+      SorularFilterNotifier,
+      Map<String, dynamic>
+    >((ref) {
+      return SorularFilterNotifier.autoDispose();
     });
 
 // DEĞİŞEN PROVIDER'LAR ////////////////////////////////////////////////////
@@ -47,14 +50,14 @@ final sorularFilterProvider =
 // 5. TÜM DERSLERİN LİSTESİNİ OLUŞTURAN PROVIDER (GÜNCELLENDİ)
 // Artık veritabanını okumak yerine doğrudan listeler.dart dosyasındaki
 // 'dersler' listesini döndürüyor.
-final dersListProvider = Provider<List<String>>((ref) {
+final dersListProvider = Provider.autoDispose<List<String>>((ref) {
   return dersler; // listeler.dart'tan gelen statik liste
 });
 
 // 6. SEÇİLİ DERSE GÖRE KONU LİSTESİNİ OLUŞTURAN PROVIDER (GÜNCELLENDİ)
 // Artık veritabanını filtrelemek yerine, seçilen derse göre
 // listeler.dart'taki 'konuMap'ten ilgili konu listesini getiriyor.
-final konuListProvider = Provider<List<String>>((ref) {
+final konuListProvider = Provider.autoDispose<List<String>>((ref) {
   final selectedDers = ref.watch(sorularFilterProvider)['ders'];
 
   // Eğer bir ders seçilmemişse boş liste döndür.
@@ -70,7 +73,7 @@ final konuListProvider = Provider<List<String>>((ref) {
 // 4. FİLTRELENMİŞ LİSTEYİ OLUŞTURAN NİHAİ PROVIDER (Aynen kalıyor)
 // Bu provider'ın mantığı değişmedi çünkü o, filtrelenecek asıl sorularla ilgileniyor,
 // filtre seçeneklerinin nereden geldiğiyle değil.
-final filteredSorularProvider = Provider<List<SoruModel>>((ref) {
+final filteredSorularProvider = Provider.autoDispose<List<SoruModel>>((ref) {
   final allSorularAsyncValue = ref.watch(allSorularProvider);
   final filter = ref.watch(sorularFilterProvider);
 

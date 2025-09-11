@@ -5,11 +5,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 // Bu provider, seçilen resim dosyasının durumunu tutar.
 // Başlangıçta null (resim seçilmemiş).
-final imagePickerProvider = StateNotifierProvider<ImagePickerNotifier, File?>((
-  ref,
-) {
-  return ImagePickerNotifier();
-});
+final imagePickerProvider =
+    StateNotifierProvider.autoDispose<ImagePickerNotifier, File?>((ref) {
+      return ImagePickerNotifier();
+    });
 
 class ImagePickerNotifier extends StateNotifier<File?> {
   // Başlangıç durumunu null olarak ayarlıyoruz.

@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 1.0.0+6
 
 environment:
   sdk: ^3.9.0
@@ -31,6 +31,10 @@ dependencies:
   google_fonts: ^6.3.1
   image_picker: ^1.2.0
   permission_handler: ^12.0.1
+  firebase_crashlytics: ^5.0.1
+  firebase_analytics: ^12.0.1
+  flutter_image_compress: ^2.4.0
+  firebase_app_check: ^0.4.0+1
 
 dev_dependencies:
   flutter_test:
@@ -38,6 +42,7 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   build_runner: ^2.7.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -47,6 +52,7 @@ flutter:
     - assets/logo/
     - assets/Illustrations/
     - assets/images/
+    - assets/icon/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images    dart run flutter_native_splash:create --path=splash_screen.yaml
 
@@ -63,3 +69,13 @@ flutter:
       fonts:
         - asset: assets/fonts/Montserrat.ttf
         - asset: assets/fonts/Montserrat-Italic.ttf
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#5550af"
+  adaptive_icon_foreground: "assets/icon/icon.png"
+  adaptive_icon_foreground_inset: 24
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  #remove_alpha_ios: true

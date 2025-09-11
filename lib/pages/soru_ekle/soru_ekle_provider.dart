@@ -7,7 +7,7 @@ import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 // DatabaseHelper yolu
 
 // Veritabanı sınıfına erişim için provider
-final databaseProvider = Provider<DatabaseHelper>((ref) {
+final databaseProvider = Provider.autoDispose<DatabaseHelper>((ref) {
   return DatabaseHelper.instance;
 });
 
@@ -49,11 +49,11 @@ class SoruNotifier extends StateNotifier<SoruKayitState> {
 
 // UI'ın kullanacağı StateNotifierProvider
 final soruNotifierProvider =
-    StateNotifierProvider<SoruNotifier, SoruKayitState>((ref) {
+    StateNotifierProvider.autoDispose<SoruNotifier, SoruKayitState>((ref) {
       return SoruNotifier(ref);
     });
 
 final bilgiNotifierProvider =
-    StateNotifierProvider<SoruNotifier, SoruKayitState>((ref) {
+    StateNotifierProvider.autoDispose<SoruNotifier, SoruKayitState>((ref) {
       return SoruNotifier(ref);
     });

@@ -26,7 +26,7 @@ class CustomBottomNavigationBar extends ConsumerWidget {
         NavigationDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
-          label: "Test",
+          label: "Ekle",
         ),
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
@@ -34,9 +34,9 @@ class CustomBottomNavigationBar extends ConsumerWidget {
           label: "Ana Ekran",
         ),
         NavigationDestination(
-          icon: Icon(Icons.favorite_border),
-          selectedIcon: Icon(Icons.favorite),
-          label: "Favoriler",
+          icon: Icon(Icons.quiz_outlined),
+          selectedIcon: Icon(Icons.quiz),
+          label: "Sorular",
         ),
         NavigationDestination(
           icon: Icon(Icons.person_outline),
