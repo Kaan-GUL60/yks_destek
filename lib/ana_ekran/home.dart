@@ -6,7 +6,9 @@ import 'package:kgsyks_destek/pages/ana_ekran.dart';
 import 'package:kgsyks_destek/pages/analiz_page.dart';
 import 'package:kgsyks_destek/pages/favoriler_page/favoriler_page.dart';
 import 'package:kgsyks_destek/pages/profil_page.dart';
+// ignore: unused_import
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
+import 'package:kgsyks_destek/pages/soru_ekle/with_ai/soru_ekle_ai.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -20,7 +22,7 @@ class HomePage extends ConsumerWidget {
         case 0:
           return AnalizPage(key: UniqueKey());
         case 1:
-          return SoruEkle(key: UniqueKey());
+          return SoruEkleAi(key: UniqueKey());
         case 2:
           return AnaEkran(key: UniqueKey());
         case 3:
@@ -34,7 +36,6 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       body: ProviderScope(
-        // ← ➊
         key: UniqueKey(), //     Her build’de yeni bir scope
         child: getPage(selectedIndex),
       ),

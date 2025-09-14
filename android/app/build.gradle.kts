@@ -65,5 +65,9 @@ flutter {
 dependencies {
     implementation("androidx.window:window:1.0.0")
     implementation("androidx.window:window-java:1.0.0")
+    implementation ("com.google.mlkit:text-recognition-chinese:16.0.0")
+    implementation ("com.google.mlkit:text-recognition-devanagari:16.0.0")
+    implementation ("com.google.mlkit:text-recognition-japanese:16.0.0")
+    implementation ("com.google.mlkit:text-recognition-korean:16.0.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

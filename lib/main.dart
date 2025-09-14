@@ -6,8 +6,10 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kgsyks_destek/cloud_message/services.dart';
+import 'package:kgsyks_destek/const.dart';
 import 'package:kgsyks_destek/firebase_options.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/theme_section/custom_theme.dart';
@@ -38,6 +40,7 @@ Future<void> main() async {
     //bu izni başka yerde iste
     await Permission.notification.request();
   }
+  Gemini.init(apiKey: geminiApiKey);
 
   runApp(const ProviderScope(child: MyApp()));
 }
