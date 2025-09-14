@@ -21,8 +21,8 @@ List<String> konuListMatematik = [
   "Binom Olasılık",
   "İstatistik",
   "Karmaşık Sayılar",
-  "2.Dereceden Denklemler"
-      "2.Dereceden Eşitsizlikler",
+  "2.Dereceden Denklemler",
+  "2.Dereceden Eşitsizlikler",
   "Parabol",
   "Trigonometri",
   "Logaritma",

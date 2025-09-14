@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/pages/favoriler_page/sorular_list_provider.dart';
 
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
+import 'package:kgsyks_destek/theme_section/app_colors.dart';
 
 class FavorilerPage extends ConsumerWidget {
   const FavorilerPage({super.key});
@@ -19,6 +21,8 @@ class FavorilerPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sorular'),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         // elevation: 0, // AppBar'ın varsayılan stilini temadan alması daha iyi
       ),
       body: const Column(
@@ -128,8 +132,9 @@ class _FilterControls extends ConsumerWidget {
                   label: 'Hepsi',
                   count: 0,
                   isSelected: filterState['durum'] == DurumFiltresi.hepsi,
+                  color: colorScheme.primary,
+
                   // Temanın ana rengini kullanıyoruz
-                  color: Colors.blueGrey,
                   onPressed: () => notifier.setDurum(DurumFiltresi.hepsi),
                 ),
                 const SizedBox(width: 8),
@@ -138,7 +143,7 @@ class _FilterControls extends ConsumerWidget {
                   count: 0,
                   isSelected: filterState['durum'] == DurumFiltresi.yanlislarim,
                   // Temanın 'hata' rengini kullanıyoruz
-                  color: Colors.blueGrey,
+                  color: colorScheme.primary,
                   onPressed: () => notifier.setDurum(DurumFiltresi.yanlislarim),
                 ),
                 const SizedBox(width: 8),
@@ -147,7 +152,7 @@ class _FilterControls extends ConsumerWidget {
                   count: 0,
                   isSelected: filterState['durum'] == DurumFiltresi.boslarim,
                   // Temanın ikincil rengini kullanıyoruz
-                  color: Colors.blueGrey,
+                  color: colorScheme.primary,
                   onPressed: () => notifier.setDurum(DurumFiltresi.boslarim),
                 ),
                 const SizedBox(width: 8),
@@ -157,8 +162,8 @@ class _FilterControls extends ConsumerWidget {
                   isSelected:
                       filterState['durum'] == DurumFiltresi.tamamladiklarim,
                   // Statik Yeşil yerine sistemin kendi renklerinden birini atıyoruz
-                  color: Colors
-                      .blueGrey, // Durum renkleri evrensel olduğu için kalabilir
+                  color: colorScheme
+                      .primary, // Durum renkleri evrensel olduğu için kalabilir
                   onPressed: () =>
                       notifier.setDurum(DurumFiltresi.tamamladiklarim),
                 ),
@@ -234,6 +239,7 @@ class _SoruCard extends StatelessWidget {
         );
       },
       child: Card(
+        color: AppColors.colorSpesifik,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         // Card'ın rengi otomatik olarak temadan gelir (theme.cardColor)
@@ -334,10 +340,8 @@ class FilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     // Seçili olmayan butonun rengini de temadan alıyoruz
-    final unselectedColor = theme.colorScheme.surfaceContainerHighest;
+    final unselectedColor = AppColors.colorSurface;
 
     return ElevatedButton(
       onPressed: onPressed,
@@ -346,7 +350,15 @@ class FilterButton extends StatelessWidget {
         // Buton üzerindeki yazı rengi, arkaplan rengine göre otomatik ayarlanır.
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      child: Text(label), //($count)  bu countu ekleyeblirisin sonra
+      child: Text(
+        label,
+        style: TextStyle(
+          color: AppColors.background,
+          fontFamily: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w900,
+          ).fontFamily,
+        ),
+      ), //($count)  bu countu ekleyeblirisin sonra
     );
   }
 }

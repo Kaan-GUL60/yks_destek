@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:gap/gap.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
@@ -11,6 +13,7 @@ import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
+import 'package:kgsyks_destek/theme_section/app_colors.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -90,7 +93,11 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
       }
     });
     return Scaffold(
-      appBar: AppBar(title: const Text("Soru Ekle"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Soru Ekle"),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
       // geri dön butonu gelmesi için Navigator.of(context).push(...) bu şekilde aç bu sayfayı
       body: SingleChildScrollView(
         child: Column(
@@ -100,20 +107,42 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
             const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.only(left: 15.0, right: 15),
-              child: Card.outlined(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 15,
-                        right: 15,
-                        top: 10,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      top: 10,
+                    ),
+                    child: GestureDetector(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        // Duruma göre ya seçilen resmi ya da placeholder'ı göster
+                        child: selectedImage != null
+                            ? Image.file(selectedImage, fit: BoxFit.cover)
+                            : Image.asset(
+                                'assets/images/soru_ekle.png', // pubspec.yaml'da belirttiğiniz resim
+                                fit: BoxFit.cover,
+                              ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _secimButton(
+                      onTap: () {
+                        //açılır meni çağır galeri veya kamera ile resim getir burdan sonra
+                        _showImageSourceDialog(context, ref);
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      top: 10,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: _secimButton(
                             context,
                             secilenHataNedeni,
                             "Hata Nedeni",
@@ -121,7 +150,10 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                             searchQueryHataNedeniProvider,
                             selectedHataNedeniProvider,
                           ),
-                          _secimButton(
+                        ),
+                        Gap(10),
+                        Expanded(
+                          child: _secimButton(
                             context,
                             secilenDurum,
                             "Durum",
@@ -129,42 +161,21 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                             searchQueryDurumProvider,
                             selectedDurumProvider,
                           ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 15,
-                        right: 15,
-                        top: 10,
-                      ),
-                      child: GestureDetector(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          // Duruma göre ya seçilen resmi ya da placeholder'ı göster
-                          child: selectedImage != null
-                              ? Image.file(selectedImage, fit: BoxFit.cover)
-                              : Image.asset(
-                                  'assets/images/soru_ekle.png', // pubspec.yaml'da belirttiğiniz resim
-                                  fit: BoxFit.cover,
-                                ),
                         ),
-                        onTap: () {
-                          //açılır meni çağır galeri veya kamera ile resim getir burdan sonra
-                          _showImageSourceDialog(context, ref);
-                        },
-                      ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 15,
-                        right: 15,
-                        top: 10,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _secimButton(
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      top: 10,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: _secimButton(
                             context,
                             secilenDers,
                             "Ders",
@@ -172,7 +183,10 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                             searchQueryDersProvider,
                             selectedDersProvider,
                           ),
-                          _secimButton(
+                        ),
+                        Gap(10),
+                        Expanded(
+                          child: _secimButton(
                             context,
                             secilenKonu,
                             "Konu",
@@ -180,204 +194,205 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                             searchQueryKonuProvider,
                             selectedKonuProvider,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                  ),
+                  Gap(10),
 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15.0,
-                        vertical: 10,
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
+                  _soruCevabSecim(),
+                  SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        style: ButtonStyle(
+                          shape: WidgetStatePropertyAll(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                          ),
+                        ),
+                        onPressed: _selectDate,
                         child: Text(
-                          "Cevap Seçiniz: ",
-
-                          textAlign: TextAlign.left,
-                        ),
-                      ),
-                    ),
-                    _soruCevabSecim(),
-                    SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ButtonStyle(
-                            shape: WidgetStatePropertyAll(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                            ),
-                          ),
-                          onPressed: _selectDate,
-                          child: Text(
-                            selectedDate == null
-                                ? "Hatırlatıcı Tarihi Seç"
-                                : "Seçilen: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
+                          selectedDate == null
+                              ? "Hatırlatıcı Tarihi Seç"
+                              : "Seçilen: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
+                          style: TextStyle(
+                            color: AppColors.shadow,
+                            letterSpacing: 1,
+                            fontFamily: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.w900,
+                            ).fontFamily,
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Form(
-                            key: _formKey,
-                            child: TextFormField(
-                              controller: _controllerAciklama,
-                              decoration: InputDecoration(
-                                labelText: "Soru Açıklaması",
-                                filled: true,
-                                border: OutlineInputBorder(), // M3 ile uyumlu
-                              ),
-                              maxLines: 5,
-                              minLines: 1,
-                              maxLength: 255,
-                              keyboardType:
-                                  TextInputType.text, // multiline değil
-                              textInputAction: TextInputAction.done,
-                              validator: (value) {
-                                if (value != null && value.length > 255) {
-                                  return "255 karakteri geçemez";
-                                }
-                                return null;
-                              },
+                  ),
+                  SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Form(
+                          key: _formKey,
+                          child: TextFormField(
+                            controller: _controllerAciklama,
+                            decoration: InputDecoration(
+                              labelText: "Soru Açıklaması",
+                              fillColor: AppColors.surface,
+                              filled: true,
+                              border: OutlineInputBorder(), // M3 ile uyumlu
                             ),
+                            maxLines: 5,
+                            minLines: 2,
+                            maxLength: 255,
+                            keyboardType: TextInputType.text, // multiline değil
+                            textInputAction: TextInputAction.done,
+                            validator: (value) {
+                              if (value != null && value.length > 255) {
+                                return "255 karakteri geçemez";
+                              }
+                              return null;
+                            },
                           ),
-                          SizedBox(height: 20),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.height * 0.3,
-                            child: FilledButton(
-                              style: ButtonStyle(
-                                shape: WidgetStatePropertyAll(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15.0),
-                                  ),
+                        ),
+                        Gap(10),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.height * 0.3,
+                          child: FilledButton(
+                            style: ButtonStyle(
+                              backgroundColor: const WidgetStatePropertyAll(
+                                AppColors.colorSurface,
+                              ),
+                              shape: WidgetStatePropertyAll(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15.0),
                                 ),
                               ),
-                              onPressed:
-                                  soruKayitState == SoruKayitState.loading
-                                  ? null
-                                  : () async {
-                                      // 1. Önce gerekli alanların dolu olup olmadığını kontrol et
-                                      final secilenSoruCevap = ref.read(
-                                        soruCevabiProvider,
-                                      );
-                                      if (secilenDers == null ||
-                                          secilenKonu == null ||
-                                          secilenDurum == null ||
-                                          secilenHataNedeni == null ||
-                                          selectedImage == null) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              "Lütfen resim dahil tüm alanları seçin!",
-                                            ),
-                                            backgroundColor: Colors.orange,
-                                          ),
-                                        );
-                                        return; // Eksik bilgi varsa işlemi durdur
-                                      }
-                                      if (!_formKey.currentState!.validate()) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Lütfen resim dahil tüm alanları seçin!',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      final File? selectedImage2 = ref.read(
-                                        imagePickerProvider,
-                                      );
-                                      if (selectedImage2 == null) return;
-
-                                      // 2. KALICI BİR YOL OLUŞTUR VE RESMİ KOPYALA
-                                      final appDir =
-                                          await getApplicationDocumentsDirectory();
-                                      final fileName = p.basename(
-                                        selectedImage2.path,
-                                      ); // Resmin orijinal adını alır (örn: image_picker_12345.jpg)
-                                      final savedImagePath = p.join(
-                                        appDir.path,
-                                        fileName,
-                                      ); // Yeni kalıcı yol (örn: .../Documents/image_picker_12345.jpg)
-
-                                      // OPTİMİZASYON: Resmi kaydetmeden önce sıkıştır
-
-                                      final compressedImageBytes =
-                                          await FlutterImageCompress.compressWithFile(
-                                            selectedImage2.path,
-                                            quality:
-                                                88, // Sıkıştırma kalitesini ayarla (0-100 arası)
-                                          );
-
-                                      if (compressedImageBytes == null) {
-                                        return;
-                                      }
-
-                                      // Dosyayı geçici yoldan kalıcı yola kopyala
-                                      final File savedImage = File(
-                                        savedImagePath,
-                                      );
-                                      await savedImage.writeAsBytes(
-                                        compressedImageBytes,
-                                      );
-
-                                      // 2. Verilerden SoruModel nesnesi oluştur
-                                      final yeniSoru = SoruModel(
-                                        ders: secilenDers,
-                                        konu: secilenKonu,
-                                        durum: secilenDurum,
-                                        hataNedeni: secilenHataNedeni,
-                                        soruCevap: secilenSoruCevap.name,
-                                        imagePath:
-                                            savedImage.path, // Resmin yolunu al
-                                        aciklama: _controllerAciklama.text,
-                                        eklenmeTarihi: DateTime.now(),
-                                        hatirlaticiTarihi: selectedDate,
-                                      );
-
-                                      auth.soruSayiArtir("soruSayi");
-                                      AnalyticsService().trackCount(
-                                        "buttonClick",
-                                        "soru_eklendi",
-                                      ); // soru sayıyor
-
-                                      // 3. Provider aracılığıyla veritabanına kaydet
-                                      ref
-                                          .read(soruNotifierProvider.notifier)
-                                          .addSoru(yeniSoru);
-                                    },
-                              child: soruKayitState == SoruKayitState.loading
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
-                                  : const Text(
-                                      "Kaydet",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
                             ),
+                            onPressed: soruKayitState == SoruKayitState.loading
+                                ? null
+                                : () async {
+                                    // 1. Önce gerekli alanların dolu olup olmadığını kontrol et
+                                    final secilenSoruCevap = ref.read(
+                                      soruCevabiProvider,
+                                    );
+                                    if (secilenDers == null ||
+                                        secilenKonu == null ||
+                                        secilenDurum == null ||
+                                        secilenHataNedeni == null ||
+                                        selectedImage == null) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Lütfen resim dahil tüm alanları seçin!",
+                                          ),
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                      );
+                                      return; // Eksik bilgi varsa işlemi durdur
+                                    }
+                                    if (!_formKey.currentState!.validate()) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Lütfen resim dahil tüm alanları seçin!',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    final File? selectedImage2 = ref.read(
+                                      imagePickerProvider,
+                                    );
+                                    if (selectedImage2 == null) return;
+
+                                    // 2. KALICI BİR YOL OLUŞTUR VE RESMİ KOPYALA
+                                    final appDir =
+                                        await getApplicationDocumentsDirectory();
+                                    final fileName = p.basename(
+                                      selectedImage2.path,
+                                    ); // Resmin orijinal adını alır (örn: image_picker_12345.jpg)
+                                    final savedImagePath = p.join(
+                                      appDir.path,
+                                      fileName,
+                                    ); // Yeni kalıcı yol (örn: .../Documents/image_picker_12345.jpg)
+
+                                    // OPTİMİZASYON: Resmi kaydetmeden önce sıkıştır
+
+                                    final compressedImageBytes =
+                                        await FlutterImageCompress.compressWithFile(
+                                          selectedImage2.path,
+                                          quality:
+                                              88, // Sıkıştırma kalitesini ayarla (0-100 arası)
+                                        );
+
+                                    if (compressedImageBytes == null) {
+                                      return;
+                                    }
+
+                                    // Dosyayı geçici yoldan kalıcı yola kopyala
+                                    final File savedImage = File(
+                                      savedImagePath,
+                                    );
+                                    await savedImage.writeAsBytes(
+                                      compressedImageBytes,
+                                    );
+
+                                    // 2. Verilerden SoruModel nesnesi oluştur
+                                    final yeniSoru = SoruModel(
+                                      ders: secilenDers,
+                                      konu: secilenKonu,
+                                      durum: secilenDurum,
+                                      hataNedeni: secilenHataNedeni,
+                                      soruCevap: secilenSoruCevap.name,
+                                      imagePath:
+                                          savedImage.path, // Resmin yolunu al
+                                      aciklama: _controllerAciklama.text,
+                                      eklenmeTarihi: DateTime.now(),
+                                      hatirlaticiTarihi: selectedDate,
+                                    );
+
+                                    auth.soruSayiArtir("soruSayi");
+                                    AnalyticsService().trackCount(
+                                      "buttonClick",
+                                      "soru_eklendi",
+                                    ); // soru sayıyor
+
+                                    // 3. Provider aracılığıyla veritabanına kaydet
+                                    ref
+                                        .read(soruNotifierProvider.notifier)
+                                        .addSoru(yeniSoru);
+                                  },
+                            child: soruKayitState == SoruKayitState.loading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : Text(
+                                    "Kaydet",
+
+                                    style: TextStyle(
+                                      letterSpacing: 2,
+                                      color: AppColors.shadow,
+                                      fontFamily: GoogleFonts.montserrat(
+                                        fontWeight: FontWeight.w900,
+                                      ).fontFamily,
+                                    ),
+                                  ),
                           ),
-                          SizedBox(height: 20),
-                        ],
-                      ),
+                        ),
+                        SizedBox(height: 20),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -386,53 +401,103 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     );
   }
 
-  SegmentedButton _soruCevabSecim() {
+  SegmentedButton<OptionSoruCevabi> _soruCevabSecim() {
     return SegmentedButton<OptionSoruCevabi>(
-      segments: const <ButtonSegment<OptionSoruCevabi>>[
+      segments: <ButtonSegment<OptionSoruCevabi>>[
         ButtonSegment(
           value: OptionSoruCevabi.A,
-          label: Text('A'),
-          //icon: Icon(Icons.school_outlined),
+          label: Text(
+            'A',
+            style: TextStyle(
+              letterSpacing: 1,
+              fontFamily: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w900,
+              ).fontFamily,
+            ),
+          ),
         ),
         ButtonSegment(
           value: OptionSoruCevabi.B,
-          label: Text('B'),
-          //icon: Icon(Icons.assessment_outlined),
+          label: Text(
+            'B',
+            style: TextStyle(
+              letterSpacing: 1,
+              fontFamily: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w900,
+              ).fontFamily,
+            ),
+          ),
         ),
         ButtonSegment(
           value: OptionSoruCevabi.C,
-          label: Text('C'),
-          //icon: Icon(Icons.assessment_outlined),
+          label: Text(
+            'C',
+            style: TextStyle(
+              letterSpacing: 1,
+              fontFamily: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w900,
+              ).fontFamily,
+            ),
+          ),
         ),
         ButtonSegment(
           value: OptionSoruCevabi.D,
-          label: Text('D'),
-          //icon: Icon(Icons.assessment_outlined),
+          label: Text(
+            'D',
+            style: TextStyle(
+              letterSpacing: 1,
+              fontFamily: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w900,
+              ).fontFamily,
+            ),
+          ),
         ),
         ButtonSegment(
           value: OptionSoruCevabi.E,
-          label: Text('E'),
-          //icon: Icon(Icons.assessment_outlined),
+          label: Text(
+            'E',
+            style: TextStyle(
+              letterSpacing: 1,
+              fontFamily: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w900,
+              ).fontFamily,
+            ),
+          ),
         ),
       ],
       selected: {ref.watch(soruCevabiProvider)},
-
       onSelectionChanged: (newSelection) {
         ref.read(soruCevabiProvider.notifier).state = newSelection.first;
       },
       multiSelectionEnabled: false,
+      // kapsül arka plan
       style: ButtonStyle(
-        backgroundColor: WidgetStatePropertyAll(
-          Theme.of(context).scaffoldBackgroundColor,
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 8),
         ),
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          return Colors.indigo[300]; // kapsül zemin rengi
+        }),
         shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(40), // kapsül köşe yuvarlatma
+          ),
         ),
+        // her segment için daire
+        side: const WidgetStatePropertyAll(
+          BorderSide(color: Colors.black, width: 2),
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.selected)
+              ? Colors.white
+              : Colors.black;
+        }),
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
     );
   }
 
-  ElevatedButton _secimButton(
+  FilledButton _secimButton(
     BuildContext context,
     String? secilenAT,
     String baslik,
@@ -440,7 +505,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     StateProvider query,
     StateProvider selected,
   ) {
-    return ElevatedButton(
+    return FilledButton(
       style: ButtonStyle(
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -466,6 +531,14 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
         (secilenAT != null && secilenAT.length > 20)
             ? "${secilenAT.substring(0, 20)}..."
             : secilenAT ?? baslik,
+        style: TextStyle(
+          color: AppColors.shadow,
+          fontSize: 16,
+          letterSpacing: 1,
+          fontFamily: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w900,
+          ).fontFamily,
+        ),
       ),
     );
   }

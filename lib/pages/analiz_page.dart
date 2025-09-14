@@ -1,6 +1,8 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
+import 'package:kgsyks_destek/theme_section/app_colors.dart';
 
 class AnalizPage extends StatefulWidget {
   const AnalizPage({super.key});
@@ -13,7 +15,10 @@ class _AnalizPageState extends State<AnalizPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Analiz")),
+      appBar: AppBar(
+        title: const Text("Analiz"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
       body: SingleChildScrollView(
         // Ekranın kaydırılabilir olması için
         child: Padding(
@@ -148,11 +153,68 @@ class _AnalizPageState extends State<AnalizPage> {
   Widget _buildGraphWidget() {
     return Container(
       height: 150, // Grafiğin yüksekliği
-      color: Colors.grey[200],
+
       alignment: Alignment.center,
-      child: const Text(
-        'Grafik alanı',
-        style: TextStyle(color: Colors.black54),
+      child: LineChart(
+        LineChartData(
+          lineBarsData: [
+            LineChartBarData(
+              spots: const [
+                FlSpot(0, 1),
+                FlSpot(1, 3),
+                FlSpot(2, 2),
+                FlSpot(3, 5),
+                FlSpot(4, 3),
+                FlSpot(5, 4),
+                FlSpot(6, 7),
+                FlSpot(7, 2),
+                FlSpot(8, 1),
+              ],
+
+              gradient: LinearGradient(
+                colors: [AppColors.colorMat, AppColors.colorGeo],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+              isCurved: true,
+              barWidth: 3,
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.colorMat.withValues(alpha: 0.3),
+                    AppColors.colorGeo.withValues(alpha: 0.3),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+              preventCurveOverShooting: true,
+
+              //colors: [Colors.blue],
+              dotData: FlDotData(show: false),
+            ),
+          ],
+          gridData: FlGridData(show: false),
+          borderData: FlBorderData(
+            show: true,
+            border: Border(left: BorderSide(), bottom: BorderSide()),
+          ),
+
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: true, reservedSize: 22),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: true, reservedSize: 28),
+            ),
+            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+
+            // Üst ekseni gizle
+            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
