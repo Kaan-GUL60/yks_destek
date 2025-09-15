@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
-import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
 import 'package:lottie/lottie.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
@@ -22,7 +21,8 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
   late final AnimationController _processingLottieController;
   late final AnimationController _confettiLottieController;
   bool _showConfetti = false;
-  final bool _control = true;
+  String dersAi = "";
+  String konuAi = "";
 
   final Gemini _gemini = Gemini.instance;
 
@@ -71,9 +71,29 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  addSoru(selectedImage, context),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      top: 10,
+                    ),
+                    child: GestureDetector(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: selectedImage != null
+                            ? Image.file(selectedImage, fit: BoxFit.cover)
+                            : Image.asset(
+                                'assets/images/soru_ekle_ai.png',
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                      onTap: () {
+                        _showImageSourceDialog(context, ref);
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 20),
-                  if (ocrText != null)
+                  /*if (ocrText != null)
                     Expanded(
                       child: SingleChildScrollView(
                         child: Text(
@@ -81,7 +101,7 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
                           style: const TextStyle(fontSize: 16),
                         ),
                       ),
-                    ),
+                    ),*/
                 ],
               ),
             ),
@@ -201,10 +221,6 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
     try {
       final text = await ref.read(ocrServiceProvider).recognizeFromFile(file);
       ref.read(ocrResultProvider.notifier).state = text;
-
-      if (text.isNotEmpty) {
-        setState(() => _showConfetti = true);
-      }
     } catch (e) {
       ref.read(ocrResultProvider.notifier).state = null;
     } finally {
@@ -217,13 +233,12 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
         r'ders:\s*(.*?),\s*konu:\s*(.*)$',
         dotAll: true, // \n dahil et
       );
-
       final match = reg.firstMatch(raw);
-      final ders = match?.group(1)?.trim() ?? '';
-      final konu = match?.group(2)?.trim() ?? '';
+      dersAi = match?.group(1)?.trim() ?? '';
+      konuAi = match?.group(2)?.trim() ?? '';
       print("-*/-*/*/*/-*/-*/-*/-*/-*/*/-*/-*/-*/-*/-*/*/*-/-*/-*");
-      print("ders: $ders");
-      print("konu: $konu");
+      print("ders: $dersAi");
+      print("konu: $konuAi");
       print("raw: $raw");
       print("-*/-*/*/*/-*/-*/-*/-*/-*/*/-*/-*/-*/-*/-*/*/*-/-*/-*");
       print("Gemini Analysis: $result");

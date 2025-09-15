@@ -228,7 +228,7 @@ class _SoruCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-        print("Soru ID: ${soru.id} tıklandı.");
+        //print("Soru ID: ${soru.id} tıklandı.");
         await auther.soruSayiArtir("soruAcmaSayisi");
         AnalyticsService().trackCount("soru_acma", "favoriler_page");
         final ctx = context;

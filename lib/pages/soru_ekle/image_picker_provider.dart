@@ -21,9 +21,6 @@ class ImagePickerNotifier extends StateNotifier<File?> {
     // Fotoğraf galerisi iznini istiyoruz
     final status = await Permission.photos.request();
 
-    // İzin durumunu konsola yazdırarak ne olduğunu görelim
-    //print("Galeri izin durumu: $status");
-
     if (status.isGranted) {
       //print("İzin verildi, galeri açılıyor...");
       final XFile? pickedFile = await _picker.pickImage(

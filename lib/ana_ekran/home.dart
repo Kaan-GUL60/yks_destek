@@ -8,7 +8,6 @@ import 'package:kgsyks_destek/pages/favoriler_page/favoriler_page.dart';
 import 'package:kgsyks_destek/pages/profil_page.dart';
 // ignore: unused_import
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
-import 'package:kgsyks_destek/pages/soru_ekle/with_ai/soru_ekle_ai.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -22,7 +21,7 @@ class HomePage extends ConsumerWidget {
         case 0:
           return AnalizPage(key: UniqueKey());
         case 1:
-          return SoruEkleAi(key: UniqueKey());
+          return SoruEkle(key: UniqueKey());
         case 2:
           return AnaEkran(key: UniqueKey());
         case 3:

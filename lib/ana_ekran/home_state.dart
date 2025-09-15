@@ -13,9 +13,10 @@ final sinavProvider = StateProvider.autoDispose<Option>((ref) => Option.first);
 final sinavProvider2 = StateProvider.autoDispose<Option2>(
   (ref) => Option2.first,
 );
-final soruCevabiProvider = StateProvider.autoDispose<OptionSoruCevabi>(
-  (ref) => OptionSoruCevabi.A,
+final soruCevabiProvider = StateProvider.autoDispose<OptionSoruCevabi?>(
+  (ref) => null,
 );
-
+// Bir kez tıklandı mı durumunu takip eden provider
+final isClickedProvider = StateProvider<bool>((ref) => false);
 // Sınıf seçimi için provider
 final sinifProvider = StateProvider.autoDispose<String>((ref) => 'Mezun');

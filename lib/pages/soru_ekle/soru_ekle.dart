@@ -1,7 +1,8 @@
-// ignore_for_file: unused_local_variable, unused_element
+// ignore_for_file: avoid_print
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -14,8 +15,10 @@ import 'package:kgsyks_destek/pages/soru_ekle/list_providers.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
+import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:kgsyks_destek/theme_section/app_colors.dart';
+import 'package:lottie/lottie.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -26,10 +29,33 @@ class SoruEkle extends ConsumerStatefulWidget {
   ConsumerState<SoruEkle> createState() => _SoruEkleState();
 }
 
-class _SoruEkleState extends ConsumerState<SoruEkle> {
+class _SoruEkleState extends ConsumerState<SoruEkle>
+    with TickerProviderStateMixin {
   DateTime? selectedDate;
   final _formKey = GlobalKey<FormState>();
   final _controllerAciklama = TextEditingController();
+  late final AnimationController _processingLottieController;
+  late final AnimationController _confettiLottieController;
+  bool _showConfetti = false;
+  final Gemini _gemini = Gemini.instance;
+  // ignore: unused_field
+  final bool _ekranKontorl = false;
+  String dersAi = "";
+  String konuAi = "";
+  @override
+  void initState() {
+    super.initState();
+
+    _processingLottieController = AnimationController(vsync: this);
+    _confettiLottieController = AnimationController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _processingLottieController.dispose();
+    _confettiLottieController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate() async {
     DateTime? picked = await showDatePicker(
@@ -68,9 +94,19 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     final String? secilenDurum = ref.watch(selectedDurumProvider);
     final String? secilenHataNedeni = ref.watch(selectedHataNedeniProvider);
     final String? secilenKonu = ref.watch(selectedKonuProvider);
-
-    //kayıt işlemler
     final File? selectedImage = ref.watch(imagePickerProvider);
+    final String? ocrText = ref.watch(ocrResultProvider);
+
+    // Özelliğin kullanılabilirliği
+
+    // Provider state değişimlerini dinle ve OCR başlat
+    ref.listen<File?>(imagePickerProvider, (previous, next) {
+      if (next != null && next != previous) {
+        _handleSelectedImage(next);
+      }
+    });
+    //kayıt işlemler
+    //final File? selectedImage = ref.watch(imagePickerProvider);
     //kayıt durumu kontrolü için
     final soruKayitState = ref.watch(soruNotifierProvider);
 
@@ -96,35 +132,116 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
     });
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Soru Ekle"),
+        title: const Text("Yapay Zeka ile Soru Ekle"),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       // geri dön butonu gelmesi için Navigator.of(context).push(...) bu şekilde aç bu sayfayı
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            children: [
-              _addSoruManuel(
-                selectedImage,
-                context,
-                secilenHataNedeni,
-                secilenDurum,
-                secilenDers,
-                secilenKonu,
-                soruKayitState,
-                auth,
-              ),
-              const Gap(20),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(children: [
-                  
-                ],),
-              ),
-            ],
+      body: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (ocrText == null)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 30,
+                      right: 30,
+                      top: 10,
+                    ),
+                    child: GestureDetector(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: selectedImage != null
+                            ? Image.file(selectedImage, fit: BoxFit.cover)
+                            : Image.asset(
+                                'assets/images/soru_ekle_ai.png',
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                      onTap: () {
+                        _showImageSourceDialog(context, ref);
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                if (ocrText != null)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Center(
+                        child: Column(
+                          children: [
+                            _addSoruManuel(
+                              selectedImage,
+                              context,
+                              secilenHataNedeni,
+                              secilenDurum,
+                              secilenDers,
+                              secilenKonu,
+                              soruKayitState,
+                              auth,
+                            ),
+                            const Gap(20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
+          // Full-screen processing Lottie
+          if (ref.watch(ocrProcessingProvider))
+            Positioned.fill(
+              child: Container(
+                color: const Color.fromARGB(255, 245, 245, 245),
+                child: Center(
+                  child: SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: Lottie.asset(
+                      'assets/animations/ai_load.json',
+                      controller: _processingLottieController,
+                      onLoaded: (composition) {
+                        _processingLottieController
+                          ..duration = composition.duration
+                          ..repeat();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Confetti Lottie overlay
+          if (_showConfetti)
+            Positioned.fill(
+              child: Container(
+                color: Colors.transparent,
+                child: Center(
+                  child: SizedBox(
+                    width: 250,
+                    height: 250,
+                    child: Lottie.asset(
+                      'assets/animations/confetti.json',
+                      controller: _confettiLottieController,
+                      onLoaded: (composition) {
+                        _confettiLottieController
+                          ..duration = composition.duration
+                          ..forward(from: 0)
+                          ..addStatusListener((status) {
+                            if (status == AnimationStatus.completed) {
+                              setState(() => _showConfetti = false);
+                            }
+                          });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -157,35 +274,6 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                     Expanded(
                       child: _secimButton(
                         context,
-                        secilenHataNedeni,
-                        "Hata Nedeni",
-                        filteredHataNedeniProvider,
-                        searchQueryHataNedeniProvider,
-                        selectedHataNedeniProvider,
-                      ),
-                    ),
-                    Gap(10),
-                    Expanded(
-                      child: _secimButton(
-                        context,
-                        secilenDurum,
-                        "Durum",
-                        filteredDurumProvider,
-                        searchQueryDurumProvider,
-                        selectedDurumProvider,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 15, right: 15, top: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: _secimButton(
-                        context,
                         secilenDers,
                         "Ders",
                         filteredDerslerProvider,
@@ -207,6 +295,36 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                   ],
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 15, right: 15, top: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: _secimButton(
+                        context,
+                        secilenHataNedeni,
+                        "Hata Nedeni",
+                        filteredHataNedeniProvider,
+                        searchQueryHataNedeniProvider,
+                        selectedHataNedeniProvider,
+                      ),
+                    ),
+                    Gap(10),
+                    Expanded(
+                      child: _secimButton(
+                        context,
+                        secilenDurum,
+                        "Durum",
+                        filteredDurumProvider,
+                        searchQueryDurumProvider,
+                        selectedDurumProvider,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               Gap(10),
 
               _soruCevabSecim(),
@@ -292,6 +410,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
                                 if (secilenDers == null ||
                                     secilenKonu == null ||
                                     secilenDurum == null ||
+                                    secilenSoruCevap == null ||
                                     secilenHataNedeni == null ||
                                     selectedImage == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -488,11 +607,14 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
           ),
         ),
       ],
-      selected: {ref.watch(soruCevabiProvider)},
+      selected: {
+        ref.watch(soruCevabiProvider),
+      }.whereType<OptionSoruCevabi>().toSet(),
       onSelectionChanged: (newSelection) {
         ref.read(soruCevabiProvider.notifier).state = newSelection.first;
       },
       multiSelectionEnabled: false,
+      emptySelectionAllowed: true, // <-- Add this line
       // kapsül arka plan
       style: ButtonStyle(
         padding: const WidgetStatePropertyAll(
@@ -563,45 +685,6 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
           ).fontFamily,
         ),
       ),
-    );
-  }
-
-  Future<void> _showImageSourceDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Resim Kaynağını Seçin'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Galeriden Seç'),
-                onTap: () {
-                  // Diyalogu kapat
-                  Navigator.of(context).pop();
-                  // Galeriden resim seçme fonksiyonunu tetikle
-                  ref.read(imagePickerProvider.notifier).pickImageFromGallery();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Kameradan Çek'),
-                onTap: () {
-                  // Diyalogu kapat
-                  Navigator.of(context).pop();
-                  // Kameradan resim çekme fonksiyonunu tetikle
-                  ref.read(imagePickerProvider.notifier).pickImageFromCamera();
-                },
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -701,5 +784,164 @@ class _SoruEkleState extends ConsumerState<SoruEkle> {
 
     // Diyalog kapandığında arama sorgusunu sıfırla.
     ref.read(query.notifier).state = '';
+  }
+
+  Future<void> _showImageSourceDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Resim Kaynağını Seçin'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galeriden Seç'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  ref.read(imagePickerProvider.notifier).pickImageFromGallery();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Kameradan Çek'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  ref.read(imagePickerProvider.notifier).pickImageFromCamera();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleSelectedImage(File file) async {
+    ref.read(ocrProcessingProvider.notifier).state = true;
+
+    try {
+      final text = await ref.read(ocrServiceProvider).recognizeFromFile(file);
+      ref.read(ocrResultProvider.notifier).state = text;
+    } catch (e) {
+      ref.read(ocrResultProvider.notifier).state = null;
+    } finally {
+      //buraya girmeden gemini kısmına git ki herşey netleşene kadar
+      //anmasyon dönsün
+      await getGeminiAnalysis(); // fonksiyonun adı örnek
+      final raw = ref.watch(geminiResultProvider) ?? '';
+      final reg = RegExp(
+        r'ders:\s*(.*?),\s*konu:\s*(.*)$',
+        dotAll: true, // \n dahil et
+      );
+      final match = reg.firstMatch(raw);
+      dersAi = match?.group(1)?.trim() ?? '';
+      konuAi = match?.group(2)?.trim() ?? '';
+      ref.read(selectedDersProvider.notifier).state = dersAi;
+      ref.read(selectedKonuProvider.notifier).state = konuAi;
+
+      ref.read(ocrProcessingProvider.notifier).state = false;
+    }
+  }
+
+  // The getGeminiAnalysis() function to be implemented
+
+  Future<Map<String, String>> getGeminiAnalysis() async {
+    final text = ref.read(ocrResultProvider);
+    if (text == null || text.isEmpty) {
+      return {'ders': '', 'konu': ''};
+    }
+
+    try {
+      final response = await _gemini.prompt(
+        parts: [
+          Part.text(
+            "Aşağıdaki soru hangi derse aittir? Sadece '<Ders Adı>' formatında cevap ver ve başka hiçbir şey ekleme: \n\n$text",
+          ),
+        ],
+      );
+
+      String? responseText;
+      if (response != null &&
+          response.content != null &&
+          response.content!.parts != null) {
+        // Use a simple for loop to find the TextPart, which avoids
+        // the type issues of firstWhere.
+        for (var part in response.content!.parts!) {
+          if (part is TextPart) {
+            responseText = part.text;
+            break; // Stop iterating once the text is found
+          }
+        }
+
+        String ders = responseText!.trim().toLowerCase();
+
+        // Listedeki elemanlarla karşılaştır ve eşleşen ilkini bul.
+        final String bulunanDers = dkonuListeleri.firstWhere(
+          (dersInList) => dersInList.toLowerCase() == ders,
+          orElse: () => "null", // Eğer eşleşme yoksa `null` döner.
+        );
+
+        final List<String> dersinKonulari = konuListeleri[bulunanDers] ?? [];
+
+        if (dersinKonulari.isEmpty) {
+          return {'ders': ders, 'konu': 'Bilinmiyor'};
+        }
+        final responseKonu = await _gemini.prompt(
+          parts: [
+            Part.text(
+              "Aşağıdaki soru hangi ${dersinKonulari.join(', ')} konuya aittir? Sadece '<Konu Adı>' formatında cevap ver ve başka hiçbir şey ekleme: \n\n$text",
+            ),
+          ],
+        );
+        String? responseTextKonu;
+        if (responseKonu != null &&
+            responseKonu.content != null &&
+            responseKonu.content!.parts != null) {
+          // Use a simple for loop to find the TextPart, which avoids
+          // the type issues of firstWhere.
+          for (var part in responseKonu.content!.parts!) {
+            if (part is TextPart) {
+              responseTextKonu = part.text;
+              break; // Stop iterating once the text is found
+            }
+          }
+          ref.read(geminiResultProvider.notifier).state =
+              "ders: ${responseText.toString()},konu: ${responseTextKonu.toString()}";
+          return {
+            'ders': responseText.toString(),
+            'konu': responseTextKonu.toString(),
+          };
+        }
+      }
+      // ignore: unused_catch_clause
+    } on GeminiException catch (e) {
+      print('Gemini API hatası: ${e.message}');
+
+      if (!mounted) return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Sunucuya erişilemiyor. Lütfen daha sonra tekrar deneyin.",
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Bilinmeyen hata: $e');
+      if (!mounted) return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+          ),
+        ),
+      );
+    }
+
+    return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
   }
 }

@@ -14,6 +14,8 @@ final geminiResultProvider = StateProvider<String?>((ref) => null);
 
 final ocrProcessingProvider = StateProvider.autoDispose<bool>((ref) => false);
 
+final aiSolutionProvider = StateProvider.autoDispose<String?>((ref) => null);
+
 class OcrService {
   final TextRecognizer _textRecognizer = TextRecognizer(
     script: TextRecognitionScript.latin,
