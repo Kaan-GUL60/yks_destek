@@ -41,6 +41,7 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.0
   lottie: ^3.3.2
   flutter_gemini: ^3.0.0
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:

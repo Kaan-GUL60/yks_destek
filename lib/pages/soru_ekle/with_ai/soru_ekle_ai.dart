@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
+import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
 import 'package:lottie/lottie.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
@@ -21,6 +22,7 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
   late final AnimationController _processingLottieController;
   late final AnimationController _confettiLottieController;
   bool _showConfetti = false;
+  final bool _control = true;
 
   final Gemini _gemini = Gemini.instance;
 
@@ -44,6 +46,8 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
     final File? selectedImage = ref.watch(imagePickerProvider);
     final String? ocrText = ref.watch(ocrResultProvider);
     final String? geminiText = ref.watch(geminiResultProvider);
+
+    // Özelliğin kullanılabilirliği
 
     // Provider state değişimlerini dinle ve OCR başlat
     ref.listen<File?>(imagePickerProvider, (previous, next) {
@@ -73,7 +77,7 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
                     Expanded(
                       child: SingleChildScrollView(
                         child: Text(
-                          "$ocrText -----\n--- $geminiText",
+                          "$ocrText -------- $geminiText",
                           style: const TextStyle(fontSize: 16),
                         ),
                       ),
@@ -206,8 +210,24 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
     } finally {
       //buraya girmeden gemini kısmına git ki herşey netleşene kadar
       //anmasyon dönsün
-      final analysis = await getGeminiAnalysis();
-      print("Gemini Analysis: $analysis");
+
+      final result = await getGeminiAnalysis(); // fonksiyonun adı örnek
+      final raw = ref.watch(geminiResultProvider) ?? '';
+      final reg = RegExp(
+        r'ders:\s*(.*?),\s*konu:\s*(.*)$',
+        dotAll: true, // \n dahil et
+      );
+
+      final match = reg.firstMatch(raw);
+      final ders = match?.group(1)?.trim() ?? '';
+      final konu = match?.group(2)?.trim() ?? '';
+      print("-*/-*/*/*/-*/-*/-*/-*/-*/*/-*/-*/-*/-*/-*/*/*-/-*/-*");
+      print("ders: $ders");
+      print("konu: $konu");
+      print("raw: $raw");
+      print("-*/-*/*/*/-*/-*/-*/-*/-*/*/-*/-*/-*/-*/-*/*/*-/-*/-*");
+      print("Gemini Analysis: $result");
+
       ref.read(ocrProcessingProvider.notifier).state = false;
     }
   }
@@ -217,7 +237,7 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
   Future<Map<String, String>> getGeminiAnalysis() async {
     final text = ref.read(ocrResultProvider);
     if (text == null || text.isEmpty) {
-      return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
+      return {'ders': '', 'konu': ''};
     }
 
     try {
@@ -252,9 +272,6 @@ class _SoruEkleAiState extends ConsumerState<SoruEkleAi>
 
           final List<String> dersinKonulari = konuListeleri[bulunanDers] ?? [];
 
-          print(
-            "-------------**-*-*$ders-*-$bulunanDers*-*-*-*-*-*-*--*-*$dersinKonulari",
-          );
           if (dersinKonulari.isEmpty) {
             return {'ders': ders, 'konu': 'Bilinmiyor'};
           }
