@@ -17,6 +17,6 @@ final soruCevabiProvider = StateProvider.autoDispose<OptionSoruCevabi?>(
   (ref) => null,
 );
 // Bir kez tıklandı mı durumunu takip eden provider
-final isClickedProvider = StateProvider<bool>((ref) => false);
+final isClickedProvider = StateProvider.autoDispose<bool>((ref) => false);
 // Sınıf seçimi için provider
 final sinifProvider = StateProvider.autoDispose<String>((ref) => 'Mezun');

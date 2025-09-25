@@ -1,7 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
-import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/theme_section/app_colors.dart';
 
 class AnalizPage extends StatefulWidget {
@@ -32,6 +30,7 @@ class _AnalizPageState extends State<AnalizPage> {
                 title: 'Ders Çalışma Süresi',
                 highest: '**',
                 average: '**',
+                saatNet: 'Saat',
                 // _buildGraphWidget()'a grafik verilerini buraya ekle
               ),
               const SizedBox(height: 20),
@@ -39,6 +38,7 @@ class _AnalizPageState extends State<AnalizPage> {
                 title: 'TYT',
                 highest: '**',
                 average: '**',
+                saatNet: 'Net',
                 // _buildGraphWidget()'a grafik verilerini buraya ekle
               ),
               const SizedBox(height: 20),
@@ -46,6 +46,7 @@ class _AnalizPageState extends State<AnalizPage> {
                 title: 'AYT',
                 highest: '**',
                 average: '**',
+                saatNet: 'Net',
                 // _buildGraphWidget()'a grafik verilerini buraya ekle
               ), // AYT bölümü
             ],
@@ -72,14 +73,17 @@ class _AnalizPageState extends State<AnalizPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      'HEDEF: X Üniversitesi',
+                      'HEDEF: İstanbul Teknik Üniversitesi',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
                     ),
                     SizedBox(height: 5),
-                    Text('BÖLÜM: Y Bölümü', style: TextStyle(fontSize: 14)),
+                    Text(
+                      'BÖLÜM: Bilgisayar Mühendisliği',
+                      style: TextStyle(fontSize: 14),
+                    ),
                   ],
                 ),
               ),
@@ -102,6 +106,7 @@ class _AnalizPageState extends State<AnalizPage> {
     required String title,
     required String highest,
     required String average,
+    required String saatNet,
     // Widget? graphWidget,
   }) {
     return Card(
@@ -131,11 +136,11 @@ class _AnalizPageState extends State<AnalizPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'En Yüksek: $highest saat', // 'saat' veya 'Net' olarak değiştirilebilir
+                  'En Yüksek: $highest $saatNet', // 'saat' veya 'Net' olarak değiştirilebilir
                   style: const TextStyle(fontSize: 14),
                 ),
                 Text(
-                  'Ortalama: $average saat',
+                  'Ortalama: $average $saatNet',
                   style: const TextStyle(fontSize: 14),
                 ),
               ],
@@ -220,42 +225,4 @@ class _AnalizPageState extends State<AnalizPage> {
   }
 
   // AYT bölümü
-
-  // ignore: unused_element
-  FutureBuilder<List<SoruModel>> _hamSoruVerileri() {
-    return FutureBuilder<List<SoruModel>>(
-      future: DatabaseHelper.instance.getAllSorular(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text("Yükleniyor...");
-        }
-        if (snapshot.hasError) {
-          return Text("Hata: ${snapshot.error}");
-        }
-
-        final sorular = snapshot.data ?? [];
-        if (sorular.isEmpty) {
-          return const Text("Henüz kayıt yok");
-        }
-        final tumVeriler = sorular
-            .map((soru) {
-              return """
-    ID: ${soru.id}
-    Ders: ${soru.ders}
-    Konu: ${soru.konu}
-    Durum: ${soru.durum}
-    Hata Nedeni: ${soru.hataNedeni}
-    Açıklama: ${soru.aciklama}
-    Resim Yolu: ${soru.imagePath}
-    Eklenme Tarihi: ${soru.eklenmeTarihi}
-    Hatırlatıcı Tarihi: ${soru.hatirlaticiTarihi}
-    --------------------------
-    """;
-            })
-            .join("\n");
-
-        return Text(tumVeriler, style: const TextStyle(fontSize: 16));
-      },
-    );
-  }
 }

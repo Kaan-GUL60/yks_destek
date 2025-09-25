@@ -527,16 +527,12 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
       child: GestureDetector(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(18),
-          // Duruma göre ya seçilen resmi ya da placeholder'ı göster
+
           child: selectedImage != null
               ? Image.file(selectedImage, fit: BoxFit.cover)
-              : Image.asset(
-                  'assets/images/soru_ekle.png', // pubspec.yaml'da belirttiğiniz resim
-                  fit: BoxFit.cover,
-                ),
+              : Image.asset('assets/images/soru_ekle.png', fit: BoxFit.cover),
         ),
         onTap: () {
-          //açılır meni çağır galeri veya kamera ile resim getir burdan sonra
           _showImageSourceDialog(context, ref);
         },
       ),
