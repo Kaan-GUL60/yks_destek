@@ -144,4 +144,39 @@ class DatabaseHelper {
 
     return sayilar;
   }
+
+  // Soru Durumunu ve Hata Nedenini Güncelleme
+  Future<void> updateSoruDurum(
+    int id,
+    String yeniDurum,
+    String yeniHataNedeni,
+  ) async {
+    final db = await instance.database;
+    final map = <String, Object?>{
+      'durum': yeniDurum,
+      // Hata Nedeni SoruModel'de zorunlu olduğu için güncellenmeli.
+      'hataNedeni': yeniHataNedeni,
+    };
+
+    await db.update('sorular', map, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Soru Açıklamasını Güncelleme (Aynı kaldı, String kullanıyor)
+  Future<void> updateSoruAciklama(int id, String yeniAciklama) async {
+    final db = await instance.database;
+    final map = <String, Object?>{'aciklama': yeniAciklama};
+
+    await db.update('sorular', map, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Hatırlatıcı Tarihini Güncelleme (DateTime'ı String'e çeviriyor)
+  Future<void> updateSoruHatirlaticiTarihi(int id, DateTime? yeniTarih) async {
+    final db = await instance.database;
+    final map = <String, Object?>{
+      // Hata 2'nin çözümü burada: DateTime'ı String'e çeviriyoruz
+      'hatirlaticiTarihi': yeniTarih?.toIso8601String(),
+    };
+
+    await db.update('sorular', map, where: 'id = ?', whereArgs: [id]);
+  }
 }

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
+import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
 import 'package:kgsyks_destek/soru_viewer/drawingPage.dart';
@@ -18,27 +19,88 @@ import 'package:kgsyks_destek/theme_section/app_colors.dart'; // SoruModel dosya
 class SoruViewer extends ConsumerWidget {
   final int soruId;
   SoruViewer({super.key, required this.soruId});
+
   final Gemini _gemini = Gemini.instance;
+  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+
+  // --- YARDIMCI METOTLAR ---
+
+  // Durum güncelleme ve Riverpod'u yenileme
+  // HATA 1 DÜZELTİLDİ: yeniHataNedeni artık zorunlu
+  Future<void> _updateSoruDurum(
+    WidgetRef ref,
+    int id,
+    String durum,
+    String yeniHataNedeni,
+  ) async {
+    await _dbHelper.updateSoruDurum(id, durum, yeniHataNedeni);
+    // Verileri yenilemek için FutureProvider'ı geçersiz kıl
+    ref.invalidate(soruProvider(id));
+  }
+
+  // Açıklamayı güncelleme
+  Future<void> _updateAciklama(
+    WidgetRef ref,
+    int id,
+    String yeniAciklama,
+  ) async {
+    await _dbHelper.updateSoruAciklama(id, yeniAciklama);
+    ref.invalidate(soruProvider(id));
+  }
+
+  // Hatırlatıcı tarihi güncelleme (DateTime tipini kabul ediyor)
+  Future<void> _updateHatirlaticiTarih(
+    WidgetRef ref,
+    int id,
+    DateTime? tarih,
+  ) async {
+    // DatabaseHelper zaten DateTime? tipini alıp String'e çeviriyor.
+    await _dbHelper.updateSoruHatirlaticiTarihi(id, tarih);
+    ref.invalidate(soruProvider(id));
+  }
+
+  // Tarih seçiciyi açar
+  Future<void> _selectDate(BuildContext context, WidgetRef ref, int id) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      await _updateHatirlaticiTarih(ref, id, picked);
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Hatırlatıcı tarihi ${picked.day}.${picked.month}.${picked.year} olarak güncellendi!',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // soruId'yi parametre olarak ileterek soruProvider'ı dinliyoruz
     final soruAsyncValue = ref.watch(soruProvider(soruId));
     final aiSolution = ref.watch(aiSolutionProvider);
     final isClicked = ref.watch(isClickedProvider);
 
+    final aciklamaController = ref.watch(aciklamaControllerProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text("Soru Detayları")),
       body: soruAsyncValue.when(
-        // Veri yüklenirken gösterilecek widget
         loading: () => const Center(child: CircularProgressIndicator()),
-
-        // Bir hata oluştuğunda gösterilecek widget
         error: (error, stack) => Center(child: Text('Bir hata oluştu: $error')),
 
-        // Veri başarıyla yüklendiğinde gösterilecek widget
         data: (soru) {
           if (soru == null) {
             return const Center(child: Text("Soru bulunamadı."));
+          }
+
+          if (aciklamaController.text.isEmpty && soru.aciklama != null) {
+            aciklamaController.text = soru.aciklama!;
           }
 
           return SingleChildScrollView(
@@ -47,52 +109,73 @@ class SoruViewer extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- SORU BİLGİLERİ KARTI ---
                   Card.outlined(
                     color: Theme.of(context).colorScheme.primaryContainer,
                     elevation: 1,
                     child: Padding(
                       padding: const EdgeInsets.all(15.0),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Text(
+                            '${soru.ders} - ${soru.konu}',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 10),
+                          // GÜNCEL DURUM GÖSTERİMİ
+                          Text('Durum: ${soru.durum}'),
+                          // Hatırlatıcı Tarihi Gösterimi
+                          Text(
+                            // HATA 2 İLE İLGİLİ DÜZELTME: DateTime'dan String formatına çevirim.
+                            'Tekrar Tarihi: ${soru.hatirlaticiTarihi != null ? soru.hatirlaticiTarihi!.toLocal().toString().substring(0, 10) : 'Belirtilmedi'}',
+                          ),
+                          const SizedBox(height: 10),
+                          if (soru.imagePath.isNotEmpty)
+                            Image.file(File(soru.imagePath)),
+
+                          SizedBox(height: 15),
+
+                          // --- AKSİYON BUTONLARI ---
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '${soru.ders} - ${soru.konu}',
-                                style: Theme.of(context).textTheme.titleLarge,
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => DrawingPage(
+                                        imagePath: soru.imagePath,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  "Soruyu Çöz",
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
+                                ),
                               ),
-                              const SizedBox(height: 10),
-                              Text('Durum: ${soru.durum}'),
-                              //const SizedBox(height: 10),
-                              //Text('Sorunun Cevabı: ${soru.soruCevap} Şıkkı'),
-                              const SizedBox(height: 10),
-                              if (soru.imagePath.isNotEmpty)
-                                Image.file(File(soru.imagePath)),
+                              // HATIRLATICI TARİHİ GÜNCELLE BUTONU
+                              ElevatedButton.icon(
+                                onPressed: () =>
+                                    _selectDate(context, ref, soru.id!),
+                                icon: Icon(Icons.calendar_today),
+                                label: Text("Tarih Ayarla"),
+                              ),
                             ],
                           ),
-                          SizedBox(height: 15),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      DrawingPage(imagePath: soru.imagePath),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              "Soruyu Çöz",
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
+
                           Gap(10),
                           //_ai_ile_coz(isClicked, ref, soru, context),
-                          Gap(10),
-                          SizedBox(
-                            width: double.infinity,
-                            child: Text("Cevabınız: "),
+                          //Gap(20),
+
+                          // --- CEVAP SEÇİM VE DURUM GÜNCELLEME ---
+                          Text(
+                            "Cevabınız: ",
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
                           Gap(10),
                           Center(
@@ -163,23 +246,43 @@ class SoruViewer extends ConsumerWidget {
                                 ref.watch(soruCevabiProvider),
                               }.whereType<OptionSoruCevabi>().toSet(),
                               onSelectionChanged: (newSelection) {
+                                final selectedCevap = newSelection.first;
+
                                 if (ref.read(soruCevabiProvider) == null) {
                                   ref.read(soruCevabiProvider.notifier).state =
-                                      newSelection.first;
+                                      selectedCevap;
 
-                                  if (soru.soruCevap ==
-                                      newSelection.first.name) {
+                                  // --- DURUM GÜNCELLEME MANTIĞI ---
+                                  if (soru.soruCevap == selectedCevap.name) {
+                                    // DOĞRU CEVAP: hataNedeni'ni boş string yapıyoruz.
+                                    _updateSoruDurum(
+                                      ref,
+                                      soru.id!,
+                                      'Öğrenildi',
+                                      '',
+                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text("Doğru cevap!"),
+                                        content: Text(
+                                          "Doğru cevap! Soru durumu 'Öğrenildi' olarak güncellendi.",
+                                        ),
                                         backgroundColor: Colors.green,
                                       ),
                                     );
                                   } else {
+                                    // YANLIŞ CEVAP: hataNedeni'ni kaydediyoruz.
+                                    final hataNedeni =
+                                        "Seçim: ${selectedCevap.name}, Doğru: ${soru.soruCevap}";
+                                    _updateSoruDurum(
+                                      ref,
+                                      soru.id!,
+                                      'Öğrenilecek',
+                                      hataNedeni,
+                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          "Yanlış cevap! Doğru cevap: ${soru.soruCevap}",
+                                          "Yanlış cevap! Doğru cevap: ${soru.soruCevap}. Durum 'Öğrenilecek' olarak güncellendi.",
                                         ),
                                         backgroundColor: Colors.red,
                                       ),
@@ -187,26 +290,22 @@ class SoruViewer extends ConsumerWidget {
                                   }
                                 }
                               },
+                              // ... (SegmentedButton stil kodunun geri kalanı) ...
                               multiSelectionEnabled: false,
-                              emptySelectionAllowed: true, // <-- Add this line
-                              // kapsül arka plan
+                              emptySelectionAllowed: true,
                               style: ButtonStyle(
                                 padding: const WidgetStatePropertyAll(
                                   EdgeInsets.symmetric(horizontal: 8),
                                 ),
                                 backgroundColor:
                                     WidgetStateProperty.resolveWith((states) {
-                                      return Colors
-                                          .indigo[300]; // kapsül zemin rengi
+                                      return Colors.indigo[300];
                                     }),
                                 shape: WidgetStatePropertyAll(
                                   RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      40,
-                                    ), // kapsül köşe yuvarlatma
+                                    borderRadius: BorderRadius.circular(40),
                                   ),
                                 ),
-                                // her segment için daire
                                 side: const WidgetStatePropertyAll(
                                   BorderSide(color: Colors.black, width: 2),
                                 ),
@@ -228,12 +327,64 @@ class SoruViewer extends ConsumerWidget {
                       ),
                     ),
                   ),
+
                   Gap(20),
-                  // Geri kalan verileri bu şekilde ekleyebilirsiniz
-                  // Veya Image.file(File(soru.imagePath))
+
+                  // --- AÇIKLAMA DÜZENLEME KARTI ---
+                  Card.outlined(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Kendi Notların/Açıklama:",
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Gap(10),
+                          TextField(
+                            controller: aciklamaController,
+                            maxLines: null,
+                            keyboardType: TextInputType.multiline,
+                            decoration: InputDecoration(
+                              hintText:
+                                  "Sorunun çözümüne dair kendi notlarını buraya yaz...",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          Gap(10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                _updateAciklama(
+                                  ref,
+                                  soru.id!,
+                                  aciklamaController.text,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Açıklama başarıyla güncellendi.",
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.save),
+                              label: Text("Açıklamayı Güncelle"),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  Gap(20),
+
+                  // --- AI ÇÖZÜM KARTI ---
                   if (aiSolution != null)
                     Card.outlined(
-                      // Kart rengini farklı bir renkle belirleyin
                       color: Theme.of(context).colorScheme.primaryContainer,
                       elevation: 1,
                       child: Padding(
@@ -249,24 +400,15 @@ class SoruViewer extends ConsumerWidget {
                               ),
                             ),
                             AnimatedTextKit(
-                              key: ValueKey(
-                                aiSolution,
-                              ), // Metin değiştiğinde animasyonu yeniden başlatmak için
-                              totalRepeatCount:
-                                  1, // Animasyonu sadece bir kez oynat
+                              key: ValueKey(aiSolution),
+                              totalRepeatCount: 1,
                               animatedTexts: [
                                 TypewriterAnimatedText(
                                   aiSolution,
-
-                                  speed: const Duration(
-                                    milliseconds: 30,
-                                  ), // Yazma hızı
+                                  speed: const Duration(milliseconds: 30),
                                 ),
                               ],
-                              // Animasyon tamamlandığında bir eylem yapmak için onFinished'ı kullanabilirsiniz
-                              onFinished: () {
-                                // Animasyon bittiğinde yapılacak işlemler
-                              },
+                              onFinished: () {},
                             ),
                           ],
                         ),
@@ -281,20 +423,21 @@ class SoruViewer extends ConsumerWidget {
     );
   }
 
+  // _ai_ile_coz metodu aynı kalır (Daha önceki yanıtlardaki ile aynı)
+  // ignore: non_constant_identifier_names, unused_element
   ElevatedButton _ai_ile_coz(
     bool isClicked,
     WidgetRef ref,
     SoruModel soru,
     BuildContext context,
   ) {
+    // ... (metot içeriği aynı kalır)
     return ElevatedButton.icon(
       onPressed: isClicked
-          ? null // Eğer tıklandıysa, onPressed null olsun ve buton pasifleşsin
+          ? null
           : () async {
-              // button sadece bir kez tıklanabilir yap
               ref.read(isClickedProvider.notifier).state = true;
               String? text;
-              // AI ile çözme işlemi burada yapılacak
               try {
                 File imageFile = File(soru.imagePath);
                 final text2 = await ref
@@ -304,7 +447,6 @@ class SoruViewer extends ConsumerWidget {
               } catch (e) {
                 text = null;
               } finally {
-                // İşlem tamamlandıktan sonra yapılacak işlemler
                 try {
                   final response = await _gemini.prompt(
                     parts: [
@@ -317,26 +459,19 @@ class SoruViewer extends ConsumerWidget {
                   if (response != null &&
                       response.content != null &&
                       response.content!.parts != null) {
-                    // Use a simple for loop to find the TextPart, which avoids
-                    // the type issues of firstWhere.
                     for (var part in response.content!.parts!) {
                       if (part is TextPart) {
                         tesxte = part.text;
-                        break; // Stop iterating once the text is found
+                        break;
                       }
                     }
 
-                    // Metin varsa provider'a ata
                     if (tesxte != null) {
                       ref.read(aiSolutionProvider.notifier).state = tesxte;
                     }
-                    //elde edilen cevabı başka bir animasyonlu kart içinde ayzdır
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(
-                    // ignore: use_build_context_synchronously
-                    context,
-                  ).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("AI çözümü alınırken bir hata oluştu."),
                     ),
@@ -344,10 +479,7 @@ class SoruViewer extends ConsumerWidget {
                 }
               }
             },
-      icon: const Icon(
-        CupertinoIcons.sparkles,
-        color: AppColors.colorSurface,
-      ), // Ikonu buraya ekleyin
+      icon: const Icon(CupertinoIcons.sparkles, color: AppColors.colorSurface),
       label: Text("AI ile Çöz", style: Theme.of(context).textTheme.titleMedium),
     );
   }
