@@ -75,3 +75,7 @@ final filteredKonuProvider = Provider.autoDispose<List<String>>((ref) {
       .where((k) => k.toLowerCase().contains(query.toLowerCase()))
       .toList();
 });
+
+final secilenTarihProvider = StateProvider.autoDispose<DateTime?>(
+  (ref) => null,
+);

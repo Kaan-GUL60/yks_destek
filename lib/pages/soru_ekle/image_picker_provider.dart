@@ -14,12 +14,24 @@ class ImagePickerNotifier extends StateNotifier<File?> {
   // Başlangıç durumunu null olarak ayarlıyoruz.
   ImagePickerNotifier() : super(null);
 
+  File? _image;
+
   final ImagePicker _picker = ImagePicker();
 
   // Galeriden resim seçme metodu
   Future<void> pickImageFromGallery() async {
     // Fotoğraf galerisi iznini istiyoruz
-    final status = await Permission.photos.request();
+    PermissionStatus status;
+    if (Platform.isAndroid) {
+      // Android 13+ için
+      status = await Permission.photos.request();
+      // Android 12 ve altı fallback
+      if (!status.isGranted) {
+        status = await Permission.storage.request();
+      }
+    } else {
+      status = await Permission.photos.request();
+    }
 
     if (status.isGranted) {
       //print("İzin verildi, galeri açılıyor...");

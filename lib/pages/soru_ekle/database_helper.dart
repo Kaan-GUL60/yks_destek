@@ -1,6 +1,47 @@
+import 'package:flutter/material.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
+import 'package:kgsyks_destek/theme_section/app_colors.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
+class MyData {
+  final int value;
+  final Color color;
+  final String title;
+
+  MyData({required this.value, required this.color, required this.title});
+}
+
+Future<List<MyData>> getSoruSayilariDerseGoreGrafik() async {
+  final db = await DatabaseHelper.instance.database;
+
+  final result = await db.rawQuery('''
+    SELECT ders, COUNT(*) as soruSayisi
+    FROM sorular
+    GROUP BY ders
+    ORDER BY ders
+  ''');
+
+  final Map<String, Color> dersRenkMap = {
+    'Türkçe': AppColors.colorTr,
+    'Matematik': AppColors.colorMat,
+    'Geometri': AppColors.colorGeo,
+    'Fizik': AppColors.colorFiz,
+    'Kimya': AppColors.colorKim,
+    'Biyoloji': AppColors.colorBiy,
+    'Tarih': AppColors.colorTar,
+    'Coğrafya': AppColors.colorCog,
+    'Din': AppColors.colorDin,
+    'Felsefe': AppColors.colorFel,
+  };
+
+  return result.map((row) {
+    final ders = row['ders'] as String;
+    final count = row['soruSayisi'] as int;
+    final color = dersRenkMap[ders] ?? Colors.grey;
+    return MyData(value: count, color: color, title: ders);
+  }).toList();
+}
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -77,5 +118,30 @@ class DatabaseHelper {
       // Sorgu sonucu boşsa null dön
       return null;
     }
+  }
+
+  Future<Map<String, int>> getSoruDurumSayilari() async {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.rawQuery('''
+    SELECT durum, COUNT(*) as sayi
+    FROM sorular
+    GROUP BY durum
+  ''');
+
+    // default değerler
+    final Map<String, int> sayilar = {
+      'Öğrenildi': 0,
+      'Öğrenilecek': 0,
+      'Beklemede': 0,
+    };
+
+    for (var row in result) {
+      final durum = row['durum'] as String;
+      final count = row['sayi'] as int;
+      sayilar[durum] = count;
+    }
+
+    return sayilar;
   }
 }

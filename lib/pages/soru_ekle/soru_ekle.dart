@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print, dead_code
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -64,11 +64,9 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
+    setState(() {
+      selectedDate = picked;
+    });
   }
 
   void _resetForm() {
@@ -102,7 +100,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     // Provider state değişimlerini dinle ve OCR başlat
     ref.listen<File?>(imagePickerProvider, (previous, next) {
       if (next != null && next != previous) {
-        _handleSelectedImage(next);
+        //_handleSelectedImage(next);
       }
     });
     //kayıt işlemler
@@ -130,118 +128,124 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
         );
       }
     });
+    final internetState = ref.watch(internetProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Yapay Zeka ile Soru Ekle"),
+        title: const Text("Soru Ekle"),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       // geri dön butonu gelmesi için Navigator.of(context).push(...) bu şekilde aç bu sayfayı
-      body: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (ocrText == null)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 30,
-                      right: 30,
-                      top: 10,
-                    ),
-                    child: GestureDetector(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: selectedImage != null
-                            ? Image.file(selectedImage, fit: BoxFit.cover)
-                            : Image.asset(
-                                'assets/images/soru_ekle_ai.png',
-                                fit: BoxFit.cover,
-                              ),
+      body: internetState.when(
+        data: (hasInternet) => Stack(
+          children: [
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (false) //ocrText == null || !hasInternet  ai devreye sokamk için parantez içi mantığı bunla değiştir. kafii
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 30,
+                        right: 30,
+                        top: 10,
                       ),
-                      onTap: () {
-                        _showImageSourceDialog(context, ref);
-                      },
+                      child: GestureDetector(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: selectedImage != null
+                              ? Image.file(selectedImage, fit: BoxFit.cover)
+                              : Image.asset(
+                                  'assets/images/soru_ekle_ai.png',
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                        onTap: () {
+                          _showImageSourceDialog(context, ref);
+                        },
+                      ),
                     ),
-                  ),
-                const SizedBox(height: 20),
-                if (ocrText != null)
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Center(
-                        child: Column(
-                          children: [
-                            _addSoruManuel(
-                              selectedImage,
-                              context,
-                              secilenHataNedeni,
-                              secilenDurum,
-                              secilenDers,
-                              secilenKonu,
-                              soruKayitState,
-                              auth,
-                            ),
-                            const Gap(20),
-                          ],
+                  const SizedBox(height: 20),
+                  if (true) //ocrText != null
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Center(
+                          child: Column(
+                            children: [
+                              _addSoruManuel(
+                                selectedImage,
+                                context,
+                                secilenHataNedeni,
+                                secilenDurum,
+                                secilenDers,
+                                secilenKonu,
+                                soruKayitState,
+                                auth,
+                              ),
+                              const Gap(20),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Full-screen processing Lottie
-          if (ref.watch(ocrProcessingProvider))
-            Positioned.fill(
-              child: Container(
-                color: const Color.fromARGB(255, 245, 245, 245),
-                child: Center(
-                  child: SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Lottie.asset(
-                      'assets/animations/ai_load.json',
-                      controller: _processingLottieController,
-                      onLoaded: (composition) {
-                        _processingLottieController
-                          ..duration = composition.duration
-                          ..repeat();
-                      },
+            // Full-screen processing Lottie
+            if (ref.watch(ocrProcessingProvider))
+              Positioned.fill(
+                child: Container(
+                  color: const Color.fromARGB(255, 245, 245, 245),
+                  child: Center(
+                    child: SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: Lottie.asset(
+                        'assets/animations/ai_load.json',
+                        controller: _processingLottieController,
+                        onLoaded: (composition) {
+                          _processingLottieController
+                            ..duration = composition.duration
+                            ..repeat();
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          // Confetti Lottie overlay
-          if (_showConfetti)
-            Positioned.fill(
-              child: Container(
-                color: Colors.transparent,
-                child: Center(
-                  child: SizedBox(
-                    width: 250,
-                    height: 250,
-                    child: Lottie.asset(
-                      'assets/animations/confetti.json',
-                      controller: _confettiLottieController,
-                      onLoaded: (composition) {
-                        _confettiLottieController
-                          ..duration = composition.duration
-                          ..forward(from: 0)
-                          ..addStatusListener((status) {
-                            if (status == AnimationStatus.completed) {
-                              setState(() => _showConfetti = false);
-                            }
-                          });
-                      },
+            // Confetti Lottie overlay
+            if (_showConfetti)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.transparent,
+                  child: Center(
+                    child: SizedBox(
+                      width: 250,
+                      height: 250,
+                      child: Lottie.asset(
+                        'assets/animations/confetti.json',
+                        controller: _confettiLottieController,
+                        onLoaded: (composition) {
+                          _confettiLottieController
+                            ..duration = composition.duration
+                            ..forward(from: 0)
+                            ..addStatusListener((status) {
+                              if (status == AnimationStatus.completed) {
+                                setState(() => _showConfetti = false);
+                              }
+                            });
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) =>
+            const Center(child: Text('İnternet kontrolü yapılamadı')),
       ),
     );
   }
@@ -366,6 +370,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                     Form(
                       key: _formKey,
                       child: TextFormField(
+                        autofocus: false,
                         controller: _controllerAciklama,
                         decoration: InputDecoration(
                           labelText: "Soru Açıklaması",
@@ -477,7 +482,9 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                                   soruCevap: secilenSoruCevap.name,
                                   imagePath:
                                       savedImage.path, // Resmin yolunu al
-                                  aciklama: _controllerAciklama.text,
+                                  aciklama: _controllerAciklama.text == ""
+                                      ? "-"
+                                      : _controllerAciklama.text,
                                   eklenmeTarihi: DateTime.now(),
                                   hatirlaticiTarihi: selectedDate,
                                 );

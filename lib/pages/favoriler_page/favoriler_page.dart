@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -229,8 +230,12 @@ class _SoruCard extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         //print("Soru ID: ${soru.id} tıklandı.");
-        await auther.soruSayiArtir("soruAcmaSayisi");
-        AnalyticsService().trackCount("soru_acma", "favoriler_page");
+        final result = await Connectivity().checkConnectivity();
+        final online = result.any((r) => r != ConnectivityResult.none);
+        if (online) {
+          await auther.soruSayiArtir("soruAcmaSayisi");
+          AnalyticsService().trackCount("soru_acma", "favoriler_page");
+        }
         final ctx = context;
         if (!ctx.mounted) return;
         context.pushNamed(

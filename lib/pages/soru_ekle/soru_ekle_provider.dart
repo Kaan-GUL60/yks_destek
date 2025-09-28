@@ -1,5 +1,6 @@
 // lib/providers/soru_provider.dart
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
@@ -13,6 +14,11 @@ final databaseProvider = Provider.autoDispose<DatabaseHelper>((ref) {
 
 // Kaydetme işleminin durumunu tutacak enum
 enum SoruKayitState { initial, loading, success, error }
+
+final internetProvider = FutureProvider<bool>((ref) async {
+  final results = await Connectivity().checkConnectivity();
+  return results.any((r) => r != ConnectivityResult.none);
+});
 
 // State Notifier
 class SoruNotifier extends StateNotifier<SoruKayitState> {

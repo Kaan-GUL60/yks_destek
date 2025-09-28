@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
+import 'package:kgsyks_destek/main.dart';
 
 final textProvider = StateProvider<String>((ref) => "-");
 
@@ -291,6 +292,8 @@ class _SignUpState extends ConsumerState<SignUp> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+      // Özelliği etkinleştir
+      await settingStorage.saveSetting(true);
       // Kayıt başarılı, doğrulama maili gönder
       if (_auth.currentUser != null && !_auth.currentUser!.emailVerified) {
         await _auth.currentUser!.sendEmailVerification();

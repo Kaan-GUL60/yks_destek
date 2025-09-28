@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/navigation_bar/nav_bar.dart';
 import 'package:kgsyks_destek/pages/ana_ekran.dart';
-import 'package:kgsyks_destek/pages/analiz_page.dart';
+import 'package:kgsyks_destek/pages/analiz_page/analiz_page.dart';
 import 'package:kgsyks_destek/pages/favoriler_page/favoriler_page.dart';
 import 'package:kgsyks_destek/pages/profil_page.dart';
 // ignore: unused_import

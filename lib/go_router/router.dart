@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:kgsyks_destek/ana_ekran/home.dart';
+import 'package:kgsyks_destek/pages/analiz_page/analiz_add.dart';
 import 'package:kgsyks_destek/pages/favoriler_page/favoriler_page.dart';
 import 'package:kgsyks_destek/sign/bilgi_al.dart';
 import 'package:kgsyks_destek/sign/sign_in.dart';
@@ -18,6 +19,7 @@ enum AppRoute {
   settings,
   soruViewer,
   favorilerPage,
+  analizAddPage,
 }
 
 // Route paths as extension
@@ -42,6 +44,8 @@ extension AppRouteExtension on AppRoute {
         return '/soruViewer/:id';
       case AppRoute.favorilerPage:
         return '/favorilerPage';
+      case AppRoute.analizAddPage:
+        return '/analizAddPage/:id';
     }
   }
 }
@@ -89,6 +93,17 @@ final GoRouter router = GoRouter(
       path: AppRoute.favorilerPage.path,
       name: AppRoute.favorilerPage.name,
       builder: (context, state) => FavorilerPage(),
+    ),
+    GoRoute(
+      path: AppRoute.analizAddPage.path,
+      name: AppRoute.analizAddPage.name,
+      builder: (context, state) {
+        // ID parametresini state'den al ve int'e dönüştür
+        final int durumId = int.parse(state.pathParameters['id']!);
+
+        // SoruDetayEkrani widget'ını ID ile oluştur
+        return AnalizAddPage(durumId: durumId);
+      },
     ),
   ],
 );

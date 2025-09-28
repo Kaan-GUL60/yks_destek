@@ -9,7 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
+import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
+import 'package:kgsyks_destek/soru_viewer/drawingPage.dart';
 import 'package:kgsyks_destek/soru_viewer/soru_view_provider.dart';
 import 'package:kgsyks_destek/theme_section/app_colors.dart'; // SoruModel dosyanızı içe aktarın
 
@@ -72,7 +74,13 @@ class SoruViewer extends ConsumerWidget {
                           SizedBox(height: 15),
                           ElevatedButton(
                             onPressed: () {
-                              // kalem ile çözme için yeni sayfaya yönlendirme işlemi burada yapılacak
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DrawingPage(imagePath: soru.imagePath),
+                                ),
+                              );
                             },
                             child: Text(
                               "Soruyu Çöz",
@@ -80,82 +88,7 @@ class SoruViewer extends ConsumerWidget {
                             ),
                           ),
                           Gap(10),
-                          ElevatedButton.icon(
-                            onPressed: isClicked
-                                ? null // Eğer tıklandıysa, onPressed null olsun ve buton pasifleşsin
-                                : () async {
-                                    // button sadece bir kez tıklanabilir yap
-                                    ref.read(isClickedProvider.notifier).state =
-                                        true;
-                                    String? text;
-                                    // AI ile çözme işlemi burada yapılacak
-                                    try {
-                                      File imageFile = File(soru.imagePath);
-                                      final text2 = await ref
-                                          .read(ocrServiceProvider)
-                                          .recognizeFromFile(imageFile);
-                                      text = text2;
-                                    } catch (e) {
-                                      text = null;
-                                    } finally {
-                                      // İşlem tamamlandıktan sonra yapılacak işlemler
-                                      try {
-                                        final response = await _gemini.prompt(
-                                          parts: [
-                                            Part.text(
-                                              "Aşağıdaki soruyu kısa ve net bir şekilde öğrencinin anlayabileceği seviyede çöz. sadece öğrenciye çözümü anlatır şekilde cevap olarak ver ve başka hiçbir şey ekleme: \n\n$text",
-                                            ),
-                                          ],
-                                        );
-                                        String? tesxte;
-                                        if (response != null &&
-                                            response.content != null &&
-                                            response.content!.parts != null) {
-                                          // Use a simple for loop to find the TextPart, which avoids
-                                          // the type issues of firstWhere.
-                                          for (var part
-                                              in response.content!.parts!) {
-                                            if (part is TextPart) {
-                                              tesxte = part.text;
-                                              break; // Stop iterating once the text is found
-                                            }
-                                          }
-
-                                          // Metin varsa provider'a ata
-                                          if (tesxte != null) {
-                                            ref
-                                                    .read(
-                                                      aiSolutionProvider
-                                                          .notifier,
-                                                    )
-                                                    .state =
-                                                tesxte;
-                                          }
-                                          //elde edilen cevabı başka bir animasyonlu kart içinde ayzdır
-                                        }
-                                      } catch (e) {
-                                        ScaffoldMessenger.of(
-                                          // ignore: use_build_context_synchronously
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              "AI çözümü alınırken bir hata oluştu.",
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  },
-                            icon: const Icon(
-                              CupertinoIcons.sparkles,
-                              color: AppColors.colorSurface,
-                            ), // Ikonu buraya ekleyin
-                            label: Text(
-                              "AI ile Çöz",
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
+                          //_ai_ile_coz(isClicked, ref, soru, context),
                           Gap(10),
                           SizedBox(
                             width: double.infinity,
@@ -345,6 +278,77 @@ class SoruViewer extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+
+  ElevatedButton _ai_ile_coz(
+    bool isClicked,
+    WidgetRef ref,
+    SoruModel soru,
+    BuildContext context,
+  ) {
+    return ElevatedButton.icon(
+      onPressed: isClicked
+          ? null // Eğer tıklandıysa, onPressed null olsun ve buton pasifleşsin
+          : () async {
+              // button sadece bir kez tıklanabilir yap
+              ref.read(isClickedProvider.notifier).state = true;
+              String? text;
+              // AI ile çözme işlemi burada yapılacak
+              try {
+                File imageFile = File(soru.imagePath);
+                final text2 = await ref
+                    .read(ocrServiceProvider)
+                    .recognizeFromFile(imageFile);
+                text = text2;
+              } catch (e) {
+                text = null;
+              } finally {
+                // İşlem tamamlandıktan sonra yapılacak işlemler
+                try {
+                  final response = await _gemini.prompt(
+                    parts: [
+                      Part.text(
+                        "Aşağıdaki soruyu kısa ve net bir şekilde öğrencinin anlayabileceği seviyede çöz. sadece öğrenciye çözümü anlatır şekilde cevap olarak ver ve başka hiçbir şey ekleme: \n\n$text",
+                      ),
+                    ],
+                  );
+                  String? tesxte;
+                  if (response != null &&
+                      response.content != null &&
+                      response.content!.parts != null) {
+                    // Use a simple for loop to find the TextPart, which avoids
+                    // the type issues of firstWhere.
+                    for (var part in response.content!.parts!) {
+                      if (part is TextPart) {
+                        tesxte = part.text;
+                        break; // Stop iterating once the text is found
+                      }
+                    }
+
+                    // Metin varsa provider'a ata
+                    if (tesxte != null) {
+                      ref.read(aiSolutionProvider.notifier).state = tesxte;
+                    }
+                    //elde edilen cevabı başka bir animasyonlu kart içinde ayzdır
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(
+                    // ignore: use_build_context_synchronously
+                    context,
+                  ).showSnackBar(
+                    const SnackBar(
+                      content: Text("AI çözümü alınırken bir hata oluştu."),
+                    ),
+                  );
+                }
+              }
+            },
+      icon: const Icon(
+        CupertinoIcons.sparkles,
+        color: AppColors.colorSurface,
+      ), // Ikonu buraya ekleyin
+      label: Text("AI ile Çöz", style: Theme.of(context).textTheme.titleMedium),
     );
   }
 }
