@@ -1,6 +1,5 @@
 // SoruViewer'ı Riverpod ile kullanıma uygun hale getirme
 import 'dart:io';
-
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,7 @@ import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
-import 'package:kgsyks_destek/soru_viewer/drawingPage.dart';
+import 'package:kgsyks_destek/soru_viewer/drawing_page.dart';
 import 'package:kgsyks_destek/soru_viewer/soru_view_provider.dart';
 import 'package:kgsyks_destek/theme_section/app_colors.dart'; // SoruModel dosyanızı içe aktarın
 
@@ -84,7 +83,7 @@ class SoruViewer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final soruAsyncValue = ref.watch(soruProvider(soruId));
     final aiSolution = ref.watch(aiSolutionProvider);
-    final isClicked = ref.watch(isClickedProvider);
+    //final isClicked = ref.watch(isClickedProvider);
 
     final aciklamaController = ref.watch(aciklamaControllerProvider);
 

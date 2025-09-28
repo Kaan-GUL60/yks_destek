@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kgsyks_destek/pages/tek_satir_chart/progres_chart.dart';
-import 'package:kgsyks_destek/sign/bilgi_ekle_provider.dart';
+//import 'package:kgsyks_destek/sign/bilgi_ekle_provider.dart';
 import 'package:kgsyks_destek/sign/yerel_kayit.dart';
 
 import 'package:kgsyks_destek/soru_viewer/soru_view_provider.dart';
@@ -15,7 +15,7 @@ class AnaEkran extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // ignore: unused_local_variable
     final touchedIndex = ref.watch(touchedIndexProvider);
-    final kullaniciAsyncValue = ref.watch(kullaniciProvider);
+    //final kullaniciAsyncValue = ref.watch(kullaniciProvider);
     final grafikDataAsync = ref.watch(grafikDataProvider);
     final durumSayilariAsync = ref.watch(durumSayilariProvider);
 

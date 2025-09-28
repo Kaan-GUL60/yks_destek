@@ -50,7 +50,7 @@ class SplashScreen extends ConsumerWidget {
 
       if (kullaniciDetay != null) {
         // A) HEM BOOL TRUE HEM DETAY BİLGİSİ VARSA -> ANA EKRAN
-        print("******************************$kullaniciDetay");
+        //print("******************************$kullaniciDetay");
 
         // Online açılma analytics
         AnalyticsService().trackCount("uyg_acilma_sayisi", "splash_screen");

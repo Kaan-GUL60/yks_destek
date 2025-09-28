@@ -64,59 +64,6 @@ class AnalizPage extends ConsumerWidget {
     );
   }
 
-  // Kullanıcı bilgileri bölümü - artık sınıfın bir metodu
-  // ignore: unused_element
-  Widget _buildUserInfoSection(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'HEDEF: İstanbul Teknik Üniversitesi',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      'BÖLÜM: Bilgisayar Mühendisliği',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  final ctx = context;
-                  if (!ctx.mounted) return;
-                  context.pushNamed(
-                    AppRoute.analizAddPage.name,
-                    pathParameters: {"id": "0"},
-                  );
-                  // Hedef düzenleme işlemi
-                },
-                color: Colors.blue,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   // Grafik kartları için ortak bir widget - context ve ref'i zorunlu parametre olarak alıyor
   Widget _buildGraphCard({
     required BuildContext context,
@@ -276,6 +223,59 @@ class AnalizPage extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Hata: $err')),
+    );
+  }
+
+  // Kullanıcı bilgileri bölümü - artık sınıfın bir metodu
+  // ignore: unused_element
+  Widget _buildUserInfoSection(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'HEDEF: İstanbul Teknik Üniversitesi',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'BÖLÜM: Bilgisayar Mühendisliği',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  final ctx = context;
+                  if (!ctx.mounted) return;
+                  context.pushNamed(
+                    AppRoute.analizAddPage.name,
+                    pathParameters: {"id": "0"},
+                  );
+                  // Hedef düzenleme işlemi
+                },
+                color: Colors.blue,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

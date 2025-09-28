@@ -1,12 +1,7 @@
-// drawing_page.dart
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_drawing_board/flutter_drawing_board.dart';
 import 'package:flutter_drawing_board/paint_contents.dart';
-import 'package:path_provider/path_provider.dart';
 
 class DrawingPage extends StatefulWidget {
   final String imagePath;
@@ -54,25 +49,6 @@ class _DrawingPageState extends State<DrawingPage> {
     _controller.setPaintContent(Eraser());
     _controller.setStyle(strokeWidth: width);
     setState(() => _stroke = width);
-  }
-
-  Future<void> _shareImage() async {
-    try {
-      RenderRepaintBoundary boundary =
-          _globalKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
-      final tempDir = await getTemporaryDirectory();
-      final file = await File('${tempDir.path}/solution_drawing.png').create();
-      await file.writeAsBytes(pngBytes);
-      // Dosyayı paylaşma işlemi buraya gelecek.
-    } catch (e) {
-      debugPrint('Paylaşma sırasında hata oluştu: $e');
-    }
   }
 
   @override
