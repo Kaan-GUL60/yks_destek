@@ -83,9 +83,9 @@ class DatabaseHelper {
   }
 
   // Veritabanına yeni soru ekleyen metot
-  Future<void> addSoru(SoruModel soru) async {
+  Future<int> addSoru(SoruModel soru) async {
     final db = await instance.database;
-    await db.insert(
+    return await db.insert(
       'sorular', // tablo adı
       soru.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,

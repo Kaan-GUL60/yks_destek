@@ -50,60 +50,84 @@ extension AppRouteExtension on AppRoute {
   }
 }
 
-// GoRouter configuration
-final GoRouter router = GoRouter(
-  routes: [
-    GoRoute(
-      path: AppRoute.home.path,
-      name: AppRoute.home.name,
-      builder: (context, state) => SplashScreen(),
-    ),
-    GoRoute(
-      path: AppRoute.signIn.path,
-      name: AppRoute.signIn.name,
-      builder: (context, state) => SignIn(),
-    ),
-    GoRoute(
-      path: AppRoute.bilgiAl.path,
-      name: AppRoute.bilgiAl.name,
-      builder: (context, state) => BilgiAl(),
-    ),
-    GoRoute(
-      path: AppRoute.signUp.path,
-      name: AppRoute.signUp.name,
-      builder: (context, state) => SignUp(),
-    ),
-    GoRoute(
-      path: AppRoute.anaekran.path,
-      name: AppRoute.anaekran.name,
-      builder: (context, state) => HomePage(),
-    ),
-    GoRoute(
-      path: AppRoute.soruViewer.path,
-      name: AppRoute.soruViewer.name,
-      builder: (context, state) {
-        // ID parametresini state'den al ve int'e dönüştür
-        final int soruId = int.parse(state.pathParameters['id']!);
+// ==========================================================
+// 🎯 1. DEĞİŞİKLİK: router'ı 'late final' yap
+// ==========================================================
+late final GoRouter router;
 
-        // SoruDetayEkrani widget'ını ID ile oluştur
-        return SoruViewer(soruId: soruId);
-      },
-    ),
-    GoRoute(
-      path: AppRoute.favorilerPage.path,
-      name: AppRoute.favorilerPage.name,
-      builder: (context, state) => FavorilerPage(),
-    ),
-    GoRoute(
-      path: AppRoute.analizAddPage.path,
-      name: AppRoute.analizAddPage.name,
-      builder: (context, state) {
-        // ID parametresini state'den al ve int'e dönüştür
-        final int durumId = int.parse(state.pathParameters['id']!);
+// ==========================================================
+// 🎯 2. DEĞİŞİKLİK: GoRouter'ı bir fonksiyona taşı
+// ==========================================================
+/// Bu fonksiyon main.dart'tan çağrılacak
+GoRouter createRouter(String? notificationPayload) {
+  // 3. Başlangıç konumunu belirle
+  String initialLocation = AppRoute.home.path; // Varsayılan: '/' (SplashScreen)
 
-        // SoruDetayEkrani widget'ını ID ile oluştur
-        return AnalizAddPage(durumId: durumId);
-      },
-    ),
-  ],
-);
+  if (notificationPayload != null) {
+    try {
+      // Eğer bildirimden geldiysek, başlangıç konumunu SoruViewer yap
+      final int soruId = int.parse(notificationPayload);
+      initialLocation = AppRoute.soruViewer.path.replaceAll(
+        ':id',
+        soruId.toString(),
+      );
+      // Sonuç: '/soruViewer/123'
+    } catch (e) {
+      // Payload bozuksa, güvenli olarak ana sayfadan başlat
+      initialLocation = AppRoute.home.path;
+    }
+  }
+
+  // 4. Router'ı bu başlangıç konumuyla oluştur
+  return GoRouter(
+    initialLocation: initialLocation, // 🎯 EN ÖNEMLİ KISIM
+    routes: [
+      GoRoute(
+        path: AppRoute.home.path,
+        name: AppRoute.home.name,
+        builder: (context, state) => SplashScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.signIn.path,
+        name: AppRoute.signIn.name,
+        builder: (context, state) => SignIn(),
+      ),
+      GoRoute(
+        path: AppRoute.bilgiAl.path,
+        name: AppRoute.bilgiAl.name,
+        builder: (context, state) => BilgiAl(),
+      ),
+      GoRoute(
+        path: AppRoute.signUp.path,
+        name: AppRoute.signUp.name,
+        builder: (context, state) => SignUp(),
+      ),
+      GoRoute(
+        path: AppRoute.anaekran.path,
+        name: AppRoute.anaekran.name,
+        builder: (context, state) => HomePage(),
+      ),
+      GoRoute(
+        path: AppRoute.soruViewer.path,
+        name: AppRoute.soruViewer.name,
+        builder: (context, state) {
+          final int soruId = int.parse(state.pathParameters['id']!);
+          return SoruViewer(soruId: soruId);
+        },
+      ),
+      GoRoute(
+        path: AppRoute.favorilerPage.path,
+        name: AppRoute.favorilerPage.name,
+        builder: (context, state) => FavorilerPage(),
+      ),
+      GoRoute(
+        path: AppRoute.analizAddPage.path,
+        name: AppRoute.analizAddPage.name,
+        builder: (context, state) {
+          final int durumId = int.parse(state.pathParameters['id']!);
+          return AnalizAddPage(durumId: durumId);
+        },
+      ),
+    ],
+  );
+}

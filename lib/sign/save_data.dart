@@ -74,12 +74,12 @@ class UserAuth {
       rethrow;
     }
 
-    if (!user.emailVerified) {
+    /*if (!user.emailVerified) {
       throw Exception("Mail doğrulanmamış, kayıt yapılamaz.");
     }
     if (!user.emailVerified) {
       throw Exception("Mail doğrulanmamış, kayıt yapılamaz.");
-    }
+    }*/
 
     await _firestore.collection("users").doc(user.uid).set({
       'userName': userName,

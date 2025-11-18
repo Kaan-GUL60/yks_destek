@@ -10,7 +10,7 @@ final ocrServiceProvider = Provider<OcrService>((ref) {
 });
 
 final ocrResultProvider = StateProvider.autoDispose<String?>((ref) => null);
-final geminiResultProvider = StateProvider<String?>((ref) => null);
+final geminiResultProvider = StateProvider.autoDispose<String?>((ref) => null);
 
 final ocrProcessingProvider = StateProvider.autoDispose<bool>((ref) => false);
 

@@ -310,6 +310,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
           if (!ctx.mounted) return;
           switch (asd) {
             case 4:
+              //mail doğrulanmış mı kontrol et sonra kayıt yap
               _userKayit(
                 _userNameController.text,
                 selectedSinav,

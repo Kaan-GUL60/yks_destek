@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
+import 'package:kgsyks_destek/cloud_message/services.dart';
+import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
@@ -17,6 +19,7 @@ import 'package:kgsyks_destek/theme_section/app_colors.dart'; // SoruModel dosya
 
 class SoruViewer extends ConsumerWidget {
   final int soruId;
+
   SoruViewer({super.key, required this.soruId});
 
   final Gemini _gemini = Gemini.instance;
@@ -53,9 +56,74 @@ class SoruViewer extends ConsumerWidget {
     int id,
     DateTime? tarih,
   ) async {
-    // DatabaseHelper zaten DateTime? tipini alıp String'e çeviriyor.
+    final SoruModel? soru = ref.read(soruProvider(id)).value;
+
+    // 2. Bir güvenlik kontrolü ekleyelim.
+    // Bu kod 'data' bloğundan çağrıldığı için 'soru' null olmamalı, ama kontrol iyidir.
+    if (soru == null) {
+      debugPrint("Hata: Soru verisi okunamadı. Bildirim planlanamıyor.");
+      return; // Soru yoksa işlemi durdur
+    }
+    // 1️⃣ Tarihi veritabanına kaydet
     await _dbHelper.updateSoruHatirlaticiTarihi(id, tarih);
     ref.invalidate(soruProvider(id));
+
+    if (tarih != null) {
+      final now = DateTime.now();
+
+      // 2️⃣ 12:00 ve 15:00 için planla
+      final DateTime saat12 = DateTime(
+        tarih.year,
+        tarih.month,
+        tarih.day,
+        12,
+        0,
+      );
+      final DateTime saat15 = DateTime(
+        tarih.year,
+        tarih.month,
+        tarih.day,
+        17,
+        0,
+      );
+      final String bildirimBasligi = '${soru.ders} Hatırlatması ⏰';
+      final String bildirimGovdesi =
+          '${soru.konu} konusundaki soruyu tekrar etme zamanı!';
+
+      if (saat12.isAfter(now)) {
+        await scheduleLocalNotification(
+          notificationId: id * 10 + 1, // 1. Hesaplanan ID
+          soruId: id, // 2. Gerçek Soru ID
+          title: bildirimBasligi,
+          body: '$bildirimGovdesi 🎯',
+          scheduledTime: saat12,
+          imagePath: soru.imagePath,
+        );
+      }
+
+      // 🎯 SAAT 15 ÇAĞRISI GÜNCELLENDİ
+      if (saat15.isAfter(now)) {
+        await scheduleLocalNotification(
+          notificationId: id * 10 + 2, // 1. Hesaplanan ID
+          soruId: id, // 2. Gerçek Soru ID
+          title: bildirimBasligi,
+          body: '$bildirimGovdesi 🎯',
+          scheduledTime: saat15,
+          imagePath: soru.imagePath,
+        );
+      }
+
+      // 🎯 TEST BİLDİRİMİ ÇAĞRISI GÜNCELLENDİ (Eğer hala kullanıyorsanız)
+      /*final DateTime testZamani = now.add(const Duration(seconds: 3));
+      await scheduleLocalNotification(
+        notificationId: id * 10 + 99, // 1. Hesaplanan ID
+        soruId: id, // 2. Gerçek Soru ID
+        title: bildirimBasligi,
+        body: '$bildirimGovdesi (Saat 15:00)',
+        scheduledTime: testZamani,
+        imagePath: soru.imagePath,
+      );*/
+    }
   }
 
   // Tarih seçiciyi açar
@@ -88,7 +156,23 @@ class SoruViewer extends ConsumerWidget {
     final aciklamaController = ref.watch(aciklamaControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Soru Detayları")),
+      appBar: AppBar(
+        title: const Text("Soru Detayları"),
+        leading: BackButton(
+          onPressed: () {
+            // Cihazın 'geri' tuşuna basıp basamayacağını kontrol et
+            if (Navigator.canPop(context)) {
+              // EĞER BİR ÖNCEKİ SAYFA VARSA (örn: Soru Listesinden geldiniz):
+              // Sadece normal 'geri' işlemini yap.
+              Navigator.pop(context);
+            } else {
+              // EĞER BİLDİRİMDEN GELDİYSENİZ (yığındaki ilk sayfa):
+              // 'anaekran'a (soru listenizin olduğu sayfaya) yönlendir.
+              router.goNamed(AppRoute.anaekran.name);
+            }
+          },
+        ),
+      ),
       body: soruAsyncValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Bir hata oluştu: $error')),
@@ -356,12 +440,26 @@ class SoruViewer extends ConsumerWidget {
                           Align(
                             alignment: Alignment.centerRight,
                             child: ElevatedButton.icon(
-                              onPressed: () {
+                              onPressed: () async {
                                 _updateAciklama(
                                   ref,
                                   soru.id!,
                                   aciklamaController.text,
                                 );
+                                /*final DateTime testTime = DateTime.now().add(
+                                  const Duration(seconds: 15),
+                                );
+                                await scheduleLocalNotification(
+                                  notificationId:
+                                      999, // 'id' -> 'notificationId' olarak değişti
+                                  soruId: soru
+                                      .id!, // 'soruId' eklendi (o anki sorunun gerçek ID'si)
+                                  title: 'Test Bildirimi',
+                                  body: 'Bu 15 saniye sonra gelmeli',
+                                  scheduledTime: testTime,
+                                  imagePath: soru
+                                      .imagePath, // 🎯 Resim yolunu da ekleyebilirsiniz
+                                );*/
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(

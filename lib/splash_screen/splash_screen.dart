@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
@@ -34,27 +35,56 @@ class SplashScreen extends ConsumerWidget {
 
     if (!online) {
       // 1. İnternet Yok: Sadece Local Sayaç + Ana Ekran
-      final count = await localCounter.increment();
-      debugPrint("Offline açılma sayısı: $count");
-      router.goNamed(AppRoute.anaekran.name);
-      return;
+      if (!isRegisteredLocally) {
+        // İnternet yok ve kullanıcı kayıtlı değilse, kayıt/giriş ekranına yönlendir
+        router.goNamed(AppRoute.signUp.name);
+        return;
+      } else {
+        final count = await localCounter.increment();
+        debugPrint("Offline açılma sayısı: $count");
+        router.goNamed(AppRoute.anaekran.name);
+        return;
+      }
     }
 
     // 2. İnternet Var
 
     // YEREL KULLANICI KAYDI KONTROLÜ
+
     if (isRegisteredLocally) {
       // KULLANICI DETAY BİLGİLERİ KONTROLÜ (getKullanici metodu ile)
       final kullaniciDetay = await dbHelper
           .getKullanici(); // dbHelper direkt çağırıldı
 
       if (kullaniciDetay != null) {
+        //print(kullaniciDetay.userName);
         // A) HEM BOOL TRUE HEM DETAY BİLGİSİ VARSA -> ANA EKRAN
         //print("******************************$kullaniciDetay");
 
         // Online açılma analytics
         AnalyticsService().trackCount("uyg_acilma_sayisi", "splash_screen");
 
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(kullaniciDetay.uid)
+            .get();
+        if (doc.exists || doc.data() == null || doc.data()!.isEmpty) {
+          // Kullanıcı belgesi yoksa veya boşsa, Firestore'a kaydet
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(kullaniciDetay.uid)
+              .set({
+                'userName': kullaniciDetay.userName,
+                'email': kullaniciDetay.email,
+                'uid': kullaniciDetay.uid,
+                'profilePhotos': kullaniciDetay.profilePhotos,
+                'sinif': kullaniciDetay.sinif,
+                'sinav': kullaniciDetay.sinav,
+                'alan': kullaniciDetay.alan,
+                'kurumKodu': kullaniciDetay.kurumKodu,
+                'isPro': kullaniciDetay.isPro,
+              });
+        }
         // Offline sayacı Firebase'e gönder ve sıfırla
         final offlineCount = await localCounter.getCount();
         if (offlineCount > 0) {

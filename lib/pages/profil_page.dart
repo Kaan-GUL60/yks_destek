@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -8,6 +10,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,21 +26,45 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text("Çok yakında..."),
-              SizedBox(height: 15),
-              Text(
-                textAlign: TextAlign.center,
-                "Uygulamamız şuanda kısıtlı fonksiyonlarla kapalı alpha sürümündedir. ",
+              Text("Mailinizi doğrulamadıysanız, lütfen doğrulayın."),
+              Gap(10),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_auth.currentUser != null &&
+                      !_auth.currentUser!.emailVerified) {
+                    try {
+                      await _auth.currentUser!.sendEmailVerification();
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Lütfen daha sonra tekrar deneyin.'),
+                        ),
+                      );
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Kullanıcı bulunamadı veya zaten doğrulandı.',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Text("Doğrulama Maili Gönder"),
               ),
-              SizedBox(height: 15),
+              Gap(10),
+              Text("Uygulamamız geliştirilmeye devam ediyor."),
+              Gap(10),
               Text(
+                "Yaşadığınız sorunları bize iletisim@kgstech.net mail adresi üzerinden bildirebilirsiniz.",
                 textAlign: TextAlign.center,
-                "Sorun yaşıyorsanız uygulamanın en güncel sürümünü kullanıp kullanmadığınızdan emin olunuz.",
               ),
-              SizedBox(height: 15),
+              Gap(10),
               Text(
+                "Yapay zeka özellikleri yakında aktif edilecektir.",
                 textAlign: TextAlign.center,
-                "Uygulama en çok 2 günde bir girerek aktifliğinizi korursanız memnun oluruz.",
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
           ),

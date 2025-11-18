@@ -25,14 +25,20 @@ class SoruNotifier extends StateNotifier<SoruKayitState> {
   final Ref _ref;
   SoruNotifier(this._ref) : super(SoruKayitState.initial);
 
-  Future<void> addSoru(SoruModel soru) async {
+  Future<int> addSoru(SoruModel soru) async {
     try {
       state = SoruKayitState.loading;
       final dbHelper = _ref.read(databaseProvider);
-      await dbHelper.addSoru(soru);
+
+      // 2. 'dbHelper.addSoru' artık 'int' döndürüyor,
+      //    Bu ID'yi doğrudan 'return' edin.
+      final int yeniId = await dbHelper.addSoru(soru);
+
       state = SoruKayitState.success;
+      return yeniId;
     } catch (e) {
       state = SoruKayitState.error;
+      return 0; // Hata olursa 0 döndür
     }
   }
 

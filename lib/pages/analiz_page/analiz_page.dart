@@ -37,7 +37,7 @@ class AnalizPage extends ConsumerWidget {
                 saatNet: 'Saat',
                 kayitVeri: "1",
               ),
-              const SizedBox(height: 20),
+              /*const SizedBox(height: 20),
               _buildGraphCard(
                 context: context,
                 ref: ref,
@@ -56,7 +56,7 @@ class AnalizPage extends ConsumerWidget {
                 average: '**',
                 saatNet: 'Net',
                 kayitVeri: "3",
-              ), // AYT bölümü
+              ), // AYT bölümü*/
             ],
           ),
         ),
@@ -109,7 +109,7 @@ class AnalizPage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Row(
+            /*Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
@@ -121,7 +121,7 @@ class AnalizPage extends ConsumerWidget {
                   style: const TextStyle(fontSize: 14),
                 ),
               ],
-            ),
+            ),*/
             const SizedBox(height: 10),
             // Buraya grafik widget'ı gelecek
             _buildGraphWidget(
@@ -145,6 +145,15 @@ class AnalizPage extends ConsumerWidget {
     return asyncData.when(
       data: (rows) {
         // rows: [{id:1,date:'2025-09-01',studyDuration:120}, ...]
+        if (rows.isEmpty) {
+          return const Center(
+            child: Text(
+              'Henüz veri kaydı yok. Lütfen bir kayıt ekleyin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.black54),
+            ),
+          );
+        }
         final spots = <FlSpot>[];
         final dateLabels = <String>[];
         for (int i = 0; i < rows.length; i++) {

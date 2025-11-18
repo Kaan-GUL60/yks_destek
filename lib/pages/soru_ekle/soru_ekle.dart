@@ -10,6 +10,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
+import 'package:kgsyks_destek/cloud_message/services.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/list_providers.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
@@ -22,6 +23,8 @@ import 'package:lottie/lottie.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+DateTime? selectedDate;
+
 class SoruEkle extends ConsumerStatefulWidget {
   const SoruEkle({super.key});
 
@@ -31,7 +34,6 @@ class SoruEkle extends ConsumerStatefulWidget {
 
 class _SoruEkleState extends ConsumerState<SoruEkle>
     with TickerProviderStateMixin {
-  DateTime? selectedDate;
   final _formKey = GlobalKey<FormState>();
   final _controllerAciklama = TextEditingController();
   late final AnimationController _processingLottieController;
@@ -93,14 +95,14 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     final String? secilenHataNedeni = ref.watch(selectedHataNedeniProvider);
     final String? secilenKonu = ref.watch(selectedKonuProvider);
     final File? selectedImage = ref.watch(imagePickerProvider);
-    //final String? ocrText = ref.watch(ocrResultProvider);
+    final String? ocrText = ref.watch(ocrResultProvider);
 
     // Özelliğin kullanılabilirliği
 
     // Provider state değişimlerini dinle ve OCR başlat
     ref.listen<File?>(imagePickerProvider, (previous, next) {
       if (next != null && next != previous) {
-        //_handleSelectedImage(next);
+        //_handleSelectedImage(next); //
       }
     });
     //kayıt işlemler
@@ -144,7 +146,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (false) //ocrText == null || !hasInternet  ai devreye sokamk için parantez içi mantığı bunla değiştir. kafii
+                  if (false) //false ocrText == null || !hasInternet  ai devreye sokamk için parantez içi mantığı bunla değiştir. kafii
                     Padding(
                       padding: const EdgeInsets.only(
                         left: 30,
@@ -167,7 +169,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                       ),
                     ),
                   const SizedBox(height: 20),
-                  if (true) //ocrText != null
+                  if (true) // true ocrText != null
                     Expanded(
                       child: SingleChildScrollView(
                         child: Center(
@@ -472,6 +474,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                                 await savedImage.writeAsBytes(
                                   compressedImageBytes,
                                 );
+                                DateTime? selectedDate2 = selectedDate;
 
                                 // 2. Verilerden SoruModel nesnesi oluştur
                                 final yeniSoru = SoruModel(
@@ -486,7 +489,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                                       ? "-"
                                       : _controllerAciklama.text,
                                   eklenmeTarihi: DateTime.now(),
-                                  hatirlaticiTarihi: selectedDate,
+                                  hatirlaticiTarihi: selectedDate2,
                                 );
 
                                 auth.soruSayiArtir("soruSayi");
@@ -495,10 +498,86 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                                   "soru_eklendi",
                                 ); // soru sayıyor
 
+                                //**************************************************************
+
+                                //-----------------------------------------------------------
+
                                 // 3. Provider aracılığıyla veritabanına kaydet
-                                ref
+                                final int yeniId = await ref
                                     .read(soruNotifierProvider.notifier)
                                     .addSoru(yeniSoru);
+                                //print("---------------------$yeniId");
+                                //print("---------------------$selectedDate2");
+                                if (yeniId > 0 && selectedDate2 != null) {
+                                  final DateTime tarih = selectedDate2;
+                                  final now = DateTime.now();
+                                  final DateTime saat12 = DateTime(
+                                    tarih.year,
+                                    tarih.month,
+                                    tarih.day,
+                                    12,
+                                    0,
+                                  );
+                                  final DateTime saat15 = DateTime(
+                                    tarih.year,
+                                    tarih.month,
+                                    tarih.day,
+                                    15,
+                                    0,
+                                  );
+                                  final String bildirimBasligi =
+                                      '${yeniSoru.ders} Hatırlatması ⏰';
+                                  final String bildirimGovdesi =
+                                      '${yeniSoru.konu} konusundaki soruyu tekrar etme zamanı!';
+                                  debugPrint(
+                                    "Test bildirimi 5 saniye içinde gönderiliyor (ID: $yeniId)...",
+                                  );
+                                  /*await scheduleLocalNotification(
+                                    notificationId:
+                                        yeniId * 10 +
+                                        99, // Benzersiz bir test ID'si
+                                    soruId:
+                                        yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
+                                    title: '🧪 Test Bildirimi (ID: $yeniId)',
+                                    body: '${yeniSoru.konu} sorusu için test.',
+                                    scheduledTime: DateTime.now().add(
+                                      const Duration(seconds: 5),
+                                    ),
+                                    imagePath: yeniSoru
+                                        .imagePath, // Resim testini de yapar
+                                  );*/
+                                  if (saat12.isAfter(now)) {
+                                    await scheduleLocalNotification(
+                                      notificationId:
+                                          yeniId * 10 +
+                                          1, // Benzersiz bildirim ID'si
+                                      soruId:
+                                          yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
+                                      title: bildirimBasligi,
+                                      body: '$bildirimGovdesi (Saat 12:00)',
+                                      scheduledTime: saat12,
+                                      imagePath: yeniSoru.imagePath,
+                                    );
+                                  }
+
+                                  if (saat15.isAfter(now)) {
+                                    await scheduleLocalNotification(
+                                      notificationId:
+                                          yeniId * 10 +
+                                          2, // Benzersiz bildirim ID'si
+                                      soruId:
+                                          yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
+                                      title: bildirimBasligi,
+                                      body: '$bildirimGovdesi (Saat 15:00)',
+                                      scheduledTime: saat15,
+                                      imagePath: yeniSoru.imagePath,
+                                    );
+                                  }
+
+                                  debugPrint(
+                                    "Soru $yeniId ile kaydedildi ve bildirimler kuruldu.",
+                                  );
+                                }
                               },
                         child: soruKayitState == SoruKayitState.loading
                             ? const CircularProgressIndicator(
@@ -823,7 +902,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
       },
     );
   }
-  /*
+
   Future<void> _handleSelectedImage(File file) async {
     ref.read(ocrProcessingProvider.notifier).state = true;
 
@@ -835,7 +914,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     } finally {
       //buraya girmeden gemini kısmına git ki herşey netleşene kadar
       //anmasyon dönsün
-      await getGeminiAnalysis(); // fonksiyonun adı örnek
+      /*await getGeminiAnalysis(); // fonksiyonun adı örnek
       final raw = ref.watch(geminiResultProvider) ?? '';
       final reg = RegExp(
         r'ders:\s*(.*?),\s*konu:\s*(.*)$',
@@ -847,10 +926,10 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
       ref.read(selectedDersProvider.notifier).state = dersAi;
       ref.read(selectedKonuProvider.notifier).state = konuAi;
 
-      ref.read(ocrProcessingProvider.notifier).state = false;
+      ref.read(ocrProcessingProvider.notifier).state = false;*/
     }
   }
-*/
+
   // The getGeminiAnalysis() function to be implemented
 
   Future<Map<String, String>> getGeminiAnalysis() async {
@@ -897,7 +976,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
         final responseKonu = await _gemini.prompt(
           parts: [
             Part.text(
-              "Aşağıdaki soru hangi ${dersinKonulari.join(', ')} konuya aittir? Sadece '<Konu Adı>' formatında cevap ver ve başka hiçbir şey ekleme: \n\n$text",
+              "Aşağıdaki soru hangi ${dersinKonulari.join(', ')} konuya aittir? Sadece '<Konu Adı>' formatında cevap ver ve başka hiçbir şey ekleme ve listeden bir en yakın konuyu seçmeye çalışarak enazından cevap ver: \n\n$text",
             ),
           ],
         );
