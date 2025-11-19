@@ -42,40 +42,112 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     '5',
   ];
 
+  InputDecoration _inputStyle({
+    required String hintText,
+    required bool isDarkMode,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(
+        color: isDarkMode ? const Color(0xFF656E77) : const Color(0xFF9EA6AD),
+        fontSize: 14,
+      ),
+      filled: true,
+      fillColor: isDarkMode ? const Color(0xFF1E252F) : Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: isDarkMode
+            ? BorderSide.none
+            : const BorderSide(color: Color(0xFFE0E0E0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      suffixIcon: suffixIcon,
+    );
+  }
+
+  Widget _buildLabel(String text, Color color, {String? subText}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5.0, left: 12.0, top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            textAlign: TextAlign.left,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 14,
+            ),
+          ),
+          if (subText != null) ...[
+            Text(
+              subText,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedSinav = ref.watch(sinavProvider);
     final selectedSinav2 = ref.watch(sinavProvider2);
-
     final selectedSinif = ref.watch(sinifProvider);
+    // Tema Renkleri
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : const Color(0xFF1C1E21);
+    final primaryColor = const Color(0xFF1E88E5);
 
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
 
-        child: ListView(
-          children: [
-            SizedBox(height: 50),
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 15.0, right: 15),
-                child: Text(
-                  "Kayıt Ol",
-                  textAlign: TextAlign.left,
-
-                  style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            children: [
+              SizedBox(height: 20),
+              Text(
+                "Kayıt Ol",
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  fontSize: 32, // Resimdeki kadar büyük
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
                 ),
               ),
-            ),
-            SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15.0),
+              const SizedBox(height: 30),
+
+              Form(
+                key: _formKey,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 10),
+                    _buildLabel("Ad Soyad", textColor),
                     TextFormField(
                       controller: _userNameController,
                       validator: (value) {
@@ -85,14 +157,17 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                         // E-posta formatı için RegExp
                         return null; // Her şey yolundaysa null döndür.
                       },
-                      decoration: InputDecoration(
-                        labelText: "Ad Soyad",
-
-                        border: OutlineInputBorder(),
+                      decoration: _inputStyle(
+                        hintText: "Kullanıcı Adı",
+                        isDarkMode: isDarkMode,
                       ),
                     ),
-                    SizedBox(height: 10),
-
+                    // --- SINAV SEÇİMİ ---
+                    _buildLabel(
+                      "Sınav Seçimi",
+                      textColor,
+                      subText: "Daha sonra değiştirilemez",
+                    ),
                     _sinavSecim(
                       selectedSinav,
                       "Sınav Seçimi",
@@ -101,30 +176,143 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                       icon1: Icon(Icons.school_outlined),
                       icon2: Icon(Icons.assessment_outlined),
                     ),
-                    SizedBox(height: 20),
+                    _buildLabel("Alan Seçimi", textColor),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Alan", style: TextStyle(fontSize: 18)),
-                            Text("Seçimi", style: TextStyle(fontSize: 18)),
-                          ],
-                        ),
-                        SizedBox(width: 10),
-                        _alanSecim(),
-                      ],
+                      children: [_alanSecim()],
                     ),
-                    SizedBox(height: 20),
 
+                    _buildLabel("Sınıf Seçimi", textColor),
                     _sinifSecim(),
-                    SizedBox(height: 20),
-                    _kullaniciKodu(),
-                    SizedBox(height: 20),
 
-                    _kayitTamamButton(context),
+                    _buildLabel("Kullanıcı kodu(yoksa boş bırakın)", textColor),
+                    TextFormField(
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      controller: _passwordController,
+                      autovalidateMode: AutovalidateMode.onUnfocus,
+                      validator: (value) {
+                        final trimmedValue = value?.trim();
+
+                        if (trimmedValue == null || trimmedValue.isEmpty) {
+                          return null; // Boş bırakılabilir, bu yüzden hata yok.
+                        }
+
+                        // Eğer boş değilse, uzunluğunun 8 karakter olup olmadığını kontrol eder.
+                        if (trimmedValue.length != 8) {
+                          return 'Kullanıcı kodu 8 karakter olmalıdır';
+                        }
+
+                        // Her iki koşul da sağlanıyorsa, yani değer ya boş ya da 8 karakterse hata yok.
+                        return null;
+                      },
+                      decoration: _inputStyle(
+                        hintText: "XXXXXXXX",
+                        isDarkMode: isDarkMode,
+                      ),
+                    ),
+                    SizedBox(height: 30),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: FilledButton(
+                        onPressed: () async {
+                          if (_formKey.currentState!.validate()) {
+                            // Eğer form geçerliyse, butona basma işlemini gerçekleştir
+                            //Firestore a kayıt işlem
+                            final selectedSinav = ref.read(sinavProvider);
+                            final selectedSinav2 = ref.read(sinavProvider2);
+                            final selectedSinif = ref.read(sinifProvider);
+                            final UserAuth auth = UserAuth();
+                            int asd;
+
+                            if (_passwordController.text.isEmpty) {
+                              _userKayit(
+                                _userNameController.text,
+                                selectedSinav,
+                                selectedSinif,
+                                selectedSinav2,
+                                context,
+                                false,
+                              );
+                              return;
+                            }
+                            asd = await auth.checkLicenseKey(
+                              _passwordController.text.isEmpty
+                                  ? ""
+                                  : _passwordController.text,
+                            );
+                            final ctx = context;
+                            if (!ctx.mounted) return;
+                            switch (asd) {
+                              case 4:
+                                //mail doğrulanmış mı kontrol et sonra kayıt yap
+                                _userKayit(
+                                  _userNameController.text,
+                                  selectedSinav,
+                                  selectedSinif,
+                                  selectedSinav2,
+                                  context,
+                                  true,
+                                );
+
+                                break;
+                              case 3:
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Üzgünüz, maalesef girdiğiniz kodun kullanım hakkı dolmuş.',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                break;
+                              case 2:
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Üzgünüz, maalesef girdiğiniz kod geçersiz',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                break;
+                              default:
+                              //bilinmeyen bir hata oldu
+                            }
+
+                            //, sinif: sinif, sinav: sinav, alan: alan, kurumKodu: kurumKodu)
+                            // Kayıt olma fonksiyonunuzu çağırabilirsiniz
+                          } else {
+                            // Form geçerli değilse, kullanıcıya hata mesajı göster
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Lütfen formdaki hataları düzeltin.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(
+                            0xFFBBDEFB,
+                          ), // Çok açık mavi
+                          foregroundColor: primaryColor, // Yazı rengi koyu mavi
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                        ),
+                        child: const Text(
+                          "Kaydı Tamamla",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                     SizedBox(height: 50),
                     SizedBox(
                       width: double.infinity,
@@ -136,14 +324,21 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Expanded _alanSecim() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Resimdeki gibi seçili butonun arka planını hafifletmek için (opsiyonel)
+    final selectedBackgroundColor = isDarkMode
+        ? colorScheme.primary.withOpacity(0.2) // Koyu modda daha şeffaf mavi
+        : const Color(0xFFBBDEFB); // Açık modda çok açık mavi
     return Expanded(
       child: SegmentedButton<Option2>(
         segments: const <ButtonSegment<Option2>>[
@@ -169,40 +364,41 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
         },
         multiSelectionEnabled: false,
         style: ButtonStyle(
+          // Seçili durumun arka plan rengi (Açık mavi veya şeffaf mavi)
+          backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return selectedBackgroundColor;
+            }
+            // Seçili olmayan butonların arkaplanı (Koyu modda Surface, Açık modda Surface)
+            return colorScheme.surface;
+          }),
+          // Yazı/İkon rengi
+          foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return Color(0xFF1E88E5); // Seçili ise Mavi
+            }
+            return colorScheme.onSurface; // Seçili değilse ana metin rengi
+          }),
+          // Dış çizgi rengi
+          side: WidgetStateProperty.resolveWith<BorderSide>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return BorderSide(
+                color: Color(0xFF1E88E5),
+                width: 1.5,
+              ); // Seçili ise Mavi çizgi
+            }
+            // Seçili değilse, koyu modda ince gri, açık modda daha belirgin gri
+            return BorderSide(
+              color: isDarkMode
+                  ? colorScheme.onSurface.withValues(alpha: 0.3)
+                  : Colors.grey.shade300,
+              width: 1,
+            );
+          }),
           shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
-      ),
-    );
-  }
-
-  TextFormField _kullaniciKodu() {
-    return TextFormField(
-      keyboardType: TextInputType.text,
-      textInputAction: TextInputAction.next,
-      controller: _passwordController,
-      autovalidateMode: AutovalidateMode.onUnfocus,
-      validator: (value) {
-        final trimmedValue = value?.trim();
-
-        if (trimmedValue == null || trimmedValue.isEmpty) {
-          return null; // Boş bırakılabilir, bu yüzden hata yok.
-        }
-
-        // Eğer boş değilse, uzunluğunun 8 karakter olup olmadığını kontrol eder.
-        if (trimmedValue.length != 8) {
-          return 'Kullanıcı kodu 8 karakter olmalıdır';
-        }
-
-        // Her iki koşul da sağlanıyorsa, yani değer ya boş ya da 8 karakterse hata yok.
-        return null;
-      },
-      decoration: InputDecoration(
-        labelText: "Kullanıcı kodu(yoksa boş bırakın)",
-        hintText: "XXXXXXXX",
-
-        border: OutlineInputBorder(),
       ),
     );
   }
@@ -215,42 +411,66 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     required Icon icon1,
     required Icon icon2,
   }) {
+    // Tema renklerine erişim
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Seçili butonun arkaplanı için açık mavi tonu (Light mod) veya şeffaf mavi (Dark mod)
+    final selectedBackgroundColor = isDarkMode
+        ? colorScheme.primary.withValues(alpha: 0.2)
+        : const Color(0xFFBBDEFB);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Sınav Seçimi", style: TextStyle(fontSize: 20)),
-            Text(
-              "Daha sonra değiştirilemez",
-              style: TextStyle(fontSize: 12, color: Colors.red),
-            ),
-          ],
-        ),
-        SizedBox(width: 10),
-        SegmentedButton<Option>(
-          segments: const <ButtonSegment<Option>>[
-            ButtonSegment(
-              value: Option.first,
-              label: Text('YKS'),
-              icon: Icon(Icons.school_outlined),
-            ),
-            ButtonSegment(
-              value: Option.second,
-              label: Text('LGS'),
-              icon: Icon(Icons.assessment_outlined),
-            ),
-          ],
-          selected: {selected},
-          onSelectionChanged: (newSelection) {
-            ref.read(sinavProvider.notifier).state = newSelection.first;
-          },
-          style: ButtonStyle(
-            shape: WidgetStatePropertyAll(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4), // 🔹 köşe radius
+        Expanded(
+          child: SegmentedButton<Option>(
+            segments: const <ButtonSegment<Option>>[
+              ButtonSegment(
+                value: Option.first,
+                label: Text('YKS'),
+                icon: Icon(Icons.school_outlined),
+              ),
+              ButtonSegment(
+                value: Option.second,
+                label: Text('LGS'),
+                icon: Icon(Icons.assessment_outlined),
+              ),
+            ],
+            selected: {selected},
+            onSelectionChanged: (newSelection) {
+              ref.read(sinavProvider.notifier).state = newSelection.first;
+            },
+            style: ButtonStyle(
+              // Arka plan rengi (Seçili ise Mavi tonu, değilse Surface)
+              backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return selectedBackgroundColor;
+                }
+                return colorScheme.surface;
+              }),
+              // Yazı/İkon rengi (Seçili ise Mavi, değilse onSurface)
+              foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Color(0xFF1E88E5);
+                }
+                return colorScheme.onSurface;
+              }),
+              // Dış çizgi/Kenarlık rengi
+              side: WidgetStateProperty.resolveWith<BorderSide>((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return BorderSide(color: Color(0xFF1E88E5), width: 1.5);
+                }
+                return BorderSide(
+                  color: isDarkMode
+                      ? colorScheme.onSurface.withValues(alpha: 0.3)
+                      : Colors.grey.shade300,
+                  width: 1,
+                );
+              }),
+              shape: WidgetStatePropertyAll(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10), // Radius korundu
+                ),
               ),
             ),
           ),
@@ -260,11 +480,55 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
   }
 
   DropdownMenu<String> _sinifSecim() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color fillColor = isDarkMode ? const Color(0xFF1E252F) : Colors.white;
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF1C1E21);
+    final Color borderColor = isDarkMode
+        ? Colors.transparent
+        : const Color(0xFFE0E0E0);
     return DropdownMenu<String>(
       initialSelection: dersler.first,
-      label: const Text('Sınıf Seçimi'),
+      label: Text(
+        'Sınıf Seçimi',
+        style: TextStyle(color: isDarkMode ? Colors.grey : Colors.black54),
+      ),
       width: double.infinity,
       // Genişliği TextField ile aynı yapar
+      // --- TASARIM AYARLARI (YENİ EKLENEN KISIM) ---
+      textStyle: TextStyle(color: textColor), // Seçilen yazının rengi
+      // Açılan menünün arka plan rengi
+      menuStyle: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(fillColor),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+      ),
+
+      // Input kutusunun şekli ve rengi
+      inputDecorationTheme: InputDecorationTheme(
+        floatingLabelBehavior: FloatingLabelBehavior.never,
+        filled: true,
+        fillColor: fillColor,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 14,
+        ),
+
+        // Radius'u 50 yaptık (Tam yuvarlak)
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: isDarkMode
+              ? BorderSide.none
+              : BorderSide(color: borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 1.5),
+        ),
+      ),
+
       dropdownMenuEntries: dersler
           .map<DropdownMenuEntry<String>>(
             (String value) => DropdownMenuEntry<String>(
@@ -277,82 +541,6 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
         // Seçilen dersi burada kullanabilirsiniz
         ref.read(sinifProvider.notifier).state = value!;
       },
-    );
-  }
-
-  ElevatedButton _kayitTamamButton(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () async {
-        if (_formKey.currentState!.validate()) {
-          // Eğer form geçerliyse, butona basma işlemini gerçekleştir
-          //Firestore a kayıt işlem
-          final selectedSinav = ref.read(sinavProvider);
-          final selectedSinav2 = ref.read(sinavProvider2);
-          final selectedSinif = ref.read(sinifProvider);
-          final UserAuth auth = UserAuth();
-          int asd;
-
-          if (_passwordController.text.isEmpty) {
-            _userKayit(
-              _userNameController.text,
-              selectedSinav,
-              selectedSinif,
-              selectedSinav2,
-              context,
-              false,
-            );
-            return;
-          }
-          asd = await auth.checkLicenseKey(
-            _passwordController.text.isEmpty ? "" : _passwordController.text,
-          );
-          final ctx = context;
-          if (!ctx.mounted) return;
-          switch (asd) {
-            case 4:
-              //mail doğrulanmış mı kontrol et sonra kayıt yap
-              _userKayit(
-                _userNameController.text,
-                selectedSinav,
-                selectedSinif,
-                selectedSinav2,
-                context,
-                true,
-              );
-
-              break;
-            case 3:
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Üzgünüz, maalesef girdiğiniz kodun kullanım hakkı dolmuş.',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              break;
-            case 2:
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Üzgünüz, maalesef girdiğiniz kod geçersiz'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              break;
-            default:
-            //bilinmeyen bir hata oldu
-          }
-
-          //, sinif: sinif, sinav: sinav, alan: alan, kurumKodu: kurumKodu)
-          // Kayıt olma fonksiyonunuzu çağırabilirsiniz
-        } else {
-          // Form geçerli değilse, kullanıcıya hata mesajı göster
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Lütfen formdaki hataları düzeltin.')),
-          );
-        }
-      },
-      child: Text("Kayıtı Tamamla"),
     );
   }
 

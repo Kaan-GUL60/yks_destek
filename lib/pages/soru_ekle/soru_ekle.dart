@@ -95,7 +95,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     final String? secilenHataNedeni = ref.watch(selectedHataNedeniProvider);
     final String? secilenKonu = ref.watch(selectedKonuProvider);
     final File? selectedImage = ref.watch(imagePickerProvider);
-    final String? ocrText = ref.watch(ocrResultProvider);
+    //final String? ocrText = ref.watch(ocrResultProvider);
 
     // Özelliğin kullanılabilirliği
 
@@ -902,7 +902,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
       },
     );
   }
-
+  /*
   Future<void> _handleSelectedImage(File file) async {
     ref.read(ocrProcessingProvider.notifier).state = true;
 
@@ -929,7 +929,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
       ref.read(ocrProcessingProvider.notifier).state = false;*/
     }
   }
-
+*/
   // The getGeminiAnalysis() function to be implemented
 
   Future<Map<String, String>> getGeminiAnalysis() async {

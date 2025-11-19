@@ -1,11 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:kgsyks_destek/pages/tek_satir_chart/progres_chart.dart';
-//import 'package:kgsyks_destek/sign/bilgi_ekle_provider.dart';
+import 'package:kgsyks_destek/pages/video_cozum.dart';
 import 'package:kgsyks_destek/sign/yerel_kayit.dart';
-
 import 'package:kgsyks_destek/soru_viewer/soru_view_provider.dart';
 
 class AnaEkran extends ConsumerWidget {
@@ -43,6 +41,21 @@ class AnaEkran extends ConsumerWidget {
         title: Text("İstatistikler"),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: IconButton(
+              icon: const Icon(Icons.video_collection),
+              onPressed: () {
+                // Grafikleri yeniden yükle
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => YayinevleriListesi()),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: grafikDataAsync.when(
         data: (grafikData) {

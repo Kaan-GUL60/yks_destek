@@ -83,6 +83,7 @@ class SplashScreen extends ConsumerWidget {
                 'alan': kullaniciDetay.alan,
                 'kurumKodu': kullaniciDetay.kurumKodu,
                 'isPro': kullaniciDetay.isPro,
+                'createdAt': FieldValue.serverTimestamp(),
               });
         }
         // Offline sayacı Firebase'e gönder ve sıfırla
@@ -92,7 +93,6 @@ class SplashScreen extends ConsumerWidget {
             "offline_acilma_toplam",
             "splash_screen:$offlineCount",
           );
-          await localCounter.reset();
         }
 
         router.goNamed(AppRoute.anaekran.name);

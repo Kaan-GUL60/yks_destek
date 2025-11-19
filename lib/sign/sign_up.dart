@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:gap/gap.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/main.dart';
 
@@ -40,58 +41,150 @@ class _SignUpState extends ConsumerState<SignUp> {
     super.dispose();
   }
 
+  InputDecoration _inputStyle({
+    required String hintText,
+    required bool isDarkMode,
+    Widget? suffixIcon, // Sağdaki İkon (Göz)
+    Widget? prefixIcon, // Soldaki İkon (Kilit/Mail)
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(
+        color: isDarkMode ? const Color(0xFF656E77) : const Color(0xFF9EA6AD),
+        fontSize: 14,
+      ),
+      filled: true,
+      // Resimdeki koyu renk: 0xFF1E252F, Light modda beyaz
+      fillColor: isDarkMode ? const Color(0xFF1E252F) : Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+
+      // KENARLIKSIZ VE TAM YUVARLAK (CAPSULE) GÖRÜNÜM
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(50), // Tam yuvarlak yapar
+        borderSide: BorderSide.none, // Çizgiyi kaldırır
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(50),
+        // Light modda ince çizgi, Dark modda çizgi yok (resimdeki gibi)
+        borderSide: isDarkMode
+            ? BorderSide.none
+            : const BorderSide(color: Color(0xFFE0E0E0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(50),
+        // Tıklayınca mavi olsun
+        borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(50),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(50),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      // İkisini de buraya atıyoruz
+      suffixIcon: suffixIcon,
+      prefixIcon: prefixIcon,
+    );
+  }
+
+  // Sınıfın en başında tanımla
+  bool _isButtonDisabled = false;
+
   @override
   Widget build(BuildContext context) {
+    // Temadan renkleri çekiyoruz
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // Yazı renkleri için yine de temadan yardım alabiliriz veya manuel verebiliriz
+    final textColor = isDarkMode ? Colors.white : const Color(0xFF1C1E21);
+    final primaryColor = const Color(0xFF1E88E5);
+
     return Scaffold(
-      appBar: AppBar(),
+      // AppBar'ı şeffaf yapıyoruz ki tasarım bütünlüğü bozulmasın ama geri gitme butonu kalsın
+      extendBodyBehindAppBar: true, // AppBar arkaplanı etkilemesin
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Image.asset(
-                "assets/logo/logo.png",
-                width: 160,
-                color: Colors.red,
-              ),
-              SizedBox(height: 20),
-              Text(
-                "Kayıt Ol",
-                style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                Center(
+                  child: Icon(
+                    Icons.school,
+                    size: 64,
+                    color: primaryColor, // Temadan gelen Mavi
+                  ),
+                ),
+                const SizedBox(height: 30),
+                Center(
+                  child: Text(
+                    "Hesabını Oluştur",
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontSize: 24, // headlineSmall boyutu yaklaşık
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    "Başarıya giden yolda ilk adımı at.",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDarkMode
+                          ? const Color(0xFF9EA6AD)
+                          : const Color(0xFF7C828A),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                Form(
+                  key: _formKey,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // --- EMAIL ALANI ---
+                      _buildLabel("E-posta Adresi"),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         autovalidateMode: AutovalidateMode.onUnfocus,
-                        autofillHints: [AutofillHints.email],
+                        autofillHints: const [AutofillHints.email],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Lütfen e-posta adresinizi girin.';
                           }
-                          // E-posta formatı için RegExp
                           final emailRegex = RegExp(
                             r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
                           );
                           if (!emailRegex.hasMatch(value)) {
                             return 'Lütfen geçerli bir e-posta adresi girin.';
                           }
-                          return null; // Her şey yolundaysa null döndür.
+                          return null;
                         },
-                        decoration: InputDecoration(
-                          labelText: "Email",
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.email_outlined),
+                        // Decoration'ı sadeleştirdik, tema main.dart'tan gelecek
+                        decoration: _inputStyle(
+                          hintText: "ornek@eposta.com",
+                          isDarkMode: isDarkMode,
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 15),
+
+                      // --- ŞİFRE ALANI ---
+                      _buildLabel("Şifre"),
                       TextFormField(
                         keyboardType: TextInputType.visiblePassword,
                         textInputAction: TextInputAction.next,
@@ -102,16 +195,22 @@ class _SignUpState extends ConsumerState<SignUp> {
                           if ((value?.length ?? 0) < 6) {
                             return 'Şifre en az 6 karakter olmalı.';
                           }
-                          // E-posta formatı için RegExp
-                          return null; // Her şey yolundaysa null döndür.
+                          return null;
                         },
-                        decoration: InputDecoration(
-                          labelText: "Şifre",
+                        decoration: _inputStyle(
+                          hintText: "En az 6 karakter",
+                          isDarkMode: isDarkMode,
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: Colors.grey,
+                          ),
                           suffixIcon: _iconButton(),
-                          border: OutlineInputBorder(),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 15),
+
+                      // --- ŞİFRE TEKRAR ALANI ---
+                      _buildLabel("Şifre Tekrar"),
                       TextFormField(
                         keyboardType: TextInputType.visiblePassword,
                         textInputAction: TextInputAction.done,
@@ -122,76 +221,139 @@ class _SignUpState extends ConsumerState<SignUp> {
                           if (value != _passwordController.text) {
                             return 'Şifreler eşleşmiyor.';
                           }
-
-                          return null; // Her şey yolundaysa null döndür.
+                          return null;
                         },
-                        decoration: InputDecoration(
-                          labelText: "Şifre Tekrar",
+                        decoration: _inputStyle(
+                          hintText: "Şifrenizi tekrar girin",
+                          isDarkMode: isDarkMode,
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: Colors.grey,
+                          ),
                           suffixIcon: _iconButton(),
-                          border: OutlineInputBorder(),
                         ),
                       ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // Eğer form geçerliyse, butona basma işlemini gerçekleştir
-                            sendMail();
-                            // Kayıt olma fonksiyonunuzu çağırabilirsiniz
-                          } else {
-                            // Form geçerli değilse, kullanıcıya hata mesajı göster
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Lütfen formdaki hataları düzeltin.',
+                      const SizedBox(height: 30),
+
+                      // --- BUTON ---
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton(
+                          // ElevatedButton yerine FilledButton (Material 3)
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              sendMail();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Lütfen formdaki hataları düzeltin.',
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
-                        },
-                        child: Text("Doğrulama maili gönder"),
+                              );
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: primaryColor, // Mavi
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                50,
+                              ), // Buton da tam yuvarlak
+                            ),
+                          ),
+                          child: const Text(
+                            "Doğrulama Maili Gönder",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                      SizedBox(height: 20),
-                      InkWell(
-                        onTap: () {
-                          //print("Text tıklandı");
-                          router.goNamed(AppRoute.signIn.name);
-                        },
-                        child: Text(
-                          "Zaten bir hesabınız var mı? Giriş yapın",
-                          style: TextStyle(
-                            decoration: TextDecoration.underline,
+                      const SizedBox(height: 24),
+
+                      // --- GİRİŞ YAP LİNKİ ---
+                      Center(
+                        child: InkWell(
+                          onTap: () {
+                            router.goNamed(AppRoute.signIn.name);
+                          },
+                          // RichText kullanarak tasarımı birebir uyguluyoruz
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(color: colorScheme.secondary),
+                              children: [
+                                const TextSpan(
+                                  text: "Zaten bir hesabınız var mı? ",
+                                ),
+                                TextSpan(
+                                  text: "Giriş Yap",
+                                  style: TextStyle(
+                                    color: primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // Tasarımdaki input üstü etiketler için yardımcı metod
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0, left: 12.0),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+    );
+  }
+
   Future<void> checkEmailVerification() async {
-    // Kullanıcı doğrulamayı yapana kadar bu döngüyü çalıştırın
+    // Bu döngü, doğrulama olana kadar veya sayfadan çıkılana kadar sonsuza dek döner
+    while (true) {
+      // 1. Önce widget hala ekranda mı diye kontrol et (Hata almamak için çok önemli)
+      if (!mounted) break;
 
-    // E-posta doğrulama linkine tıkladıktan sonra firebase Auth'u günceller
-    await FirebaseAuth.instance.currentUser!.reload();
-    final user = FirebaseAuth.instance.currentUser;
+      User? user = FirebaseAuth.instance.currentUser;
 
-    if (user!.emailVerified) {
-      // Doğrulama yapıldı, döngüyü durdur
+      // Eğer kullanıcı oturumu bir şekilde düştüyse döngüyü kır
+      if (user == null) break;
 
-      return;
-    } else {
-      ref.read(textProvider.notifier).state = "Henüz doğrulama yapılmadı.";
+      // 2. Firebase'deki bilgiyi güncelle
+      await user.reload();
+
+      // user.reload() sonrası instance'ı tekrar yenilemek sağlıklıdır
+      user = FirebaseAuth.instance.currentUser;
+
+      // 3. Kontrol et
+      if (user!.emailVerified) {
+        // Doğrulandı! Döngüyü kır (fonksiyondan çık)
+        ref.read(textProvider.notifier).state = "Doğrulama Başarılı!";
+        break;
+      } else {
+        ref.read(textProvider.notifier).state = "Henüz doğrulama yapılmadı.";
+      }
+
+      // 4. Bekle (Yorumda 3 saniye demiştin, burayı 3 yapıyorum)
+      await Future.delayed(const Duration(seconds: 4));
     }
-
-    // Her 3 saniyede bir kontrol et (kullanıcının linke tıklamasını beklerken)
-    await Future.delayed(const Duration(seconds: 1));
   }
 
   void openSheet() {
@@ -233,23 +395,50 @@ class _SignUpState extends ConsumerState<SignUp> {
                     ),
                     const SizedBox(height: 20),
                     const Text(
-                      'Doğrulama maili gönderildi. Lütfen e-postanızı kontrol edin. Eğer maili bulamıyorsanız, spam klasörünüze de bakmayı unutmayın.',
+                      'Doğrulama maili gönderildi. Lütfen e-postanızı kontrol edin.',
                       style: TextStyle(fontSize: 18),
                       textAlign: TextAlign.center,
                     ),
+                    Gap(5),
+                    const Text(
+                      'Eğer maili bulamıyorsanız, spam klasörünüze de bakmayı unutmayın.',
+                      style: TextStyle(fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                    //metin devamını küçükçe yaz alt satıra
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () async {
-                        checkEmailVerification().then((_) {
-                          // Doğrulama başarılı olduğunda text'i tekrar güncelleyebiliriz
-                          ref.read(textProvider.notifier).state =
-                              "Doğrulama Başarılı!";
-                          // Alt sayfayı kapat
-                        });
-                      },
-                      child: const Text(
-                        "Maili doğruladım",
-                        style: TextStyle(fontSize: 16),
+                      // EĞER buton devre dışı bırakıldıysa (_isButtonDisabled == true), onPressed'e NULL ver.
+                      // NULL verdiğin anda buton otomatik olarak grileşir ve tıklanamaz olur.
+                      onPressed: _isButtonDisabled
+                          ? null
+                          : () async {
+                              // 1. Önce butonu pasif hale getir ve ekranı güncelle
+                              setState(() {
+                                _isButtonDisabled = true;
+                              });
+
+                              // 2. Fonksiyonu çalıştır
+                              checkEmailVerification().then((_) {
+                                // İşlem bittiğinde yapılacaklar
+                                if (mounted) {
+                                  // Ekran hala açıksa
+                                  ref.read(textProvider.notifier).state =
+                                      "Doğrulama Başarılı!";
+                                  // Alt sayfayı kapatma kodun buraya gelecek
+                                  // Navigator.pop(context); gibi
+                                }
+                              });
+                            },
+                      // İstersen butona basılınca yazısını da değiştirebilirsin
+                      child: Text(
+                        _isButtonDisabled
+                            ? "Kontrol Ediliyor..."
+                            : "Maili doğruladım",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF1E88E5),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -274,7 +463,10 @@ class _SignUpState extends ConsumerState<SignUp> {
                         }
                         Navigator.pop(context);
                       },
-                      child: const Text('Kapat'),
+                      child: const Text(
+                        'Kapat',
+                        style: TextStyle(color: Color(0xFF1E88E5)),
+                      ),
                     ),
                   ],
                 ),
@@ -339,6 +531,7 @@ class _SignUpState extends ConsumerState<SignUp> {
       onPressed: togglePasswordView,
       icon: Icon(
         _isSecure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        color: Colors.grey,
       ),
     );
   }

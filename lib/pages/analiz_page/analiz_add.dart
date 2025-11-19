@@ -724,13 +724,13 @@ class AnalizAddPage extends ConsumerWidget {
 
       if (shouldUpdate == true) {
         await dbService.updateData(selectedDate, studyDuration);
-        print('Kayıt güncellendi: $selectedDate, Süre: $studyDuration');
+        //print('Kayıt güncellendi: $selectedDate, Süre: $studyDuration');
       } else {
         return;
       }
     } else {
       await dbService.insertData(selectedDate, studyDuration);
-      print('Yeni kayıt eklendi: $selectedDate, Süre: $studyDuration');
+      //print('Yeni kayıt eklendi: $selectedDate, Süre: $studyDuration');
     }
 
     ScaffoldMessenger.of(
