@@ -1,4 +1,6 @@
 // SoruViewer'ı Riverpod ile kullanıma uygun hale getirme
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/cupertino.dart';
@@ -136,7 +138,7 @@ class SoruViewer extends ConsumerWidget {
     );
     if (picked != null) {
       await _updateHatirlaticiTarih(ref, id, picked);
-      // ignore: use_build_context_synchronously
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

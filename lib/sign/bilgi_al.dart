@@ -337,7 +337,9 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
 
     // Resimdeki gibi seçili butonun arka planını hafifletmek için (opsiyonel)
     final selectedBackgroundColor = isDarkMode
-        ? colorScheme.primary.withOpacity(0.2) // Koyu modda daha şeffaf mavi
+        ? colorScheme.primary.withValues(
+            alpha: 0.2,
+          ) // Koyu modda daha şeffaf mavi
         : const Color(0xFFBBDEFB); // Açık modda çok açık mavi
     return Expanded(
       child: SegmentedButton<Option2>(

@@ -14,7 +14,7 @@ import 'package:kgsyks_destek/const.dart';
 import 'package:kgsyks_destek/firebase_options.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/sign/kontrol_db.dart';
-import 'package:kgsyks_destek/theme_section/custom_theme.dart';
+import 'package:kgsyks_destek/theme_section/app_theme.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 

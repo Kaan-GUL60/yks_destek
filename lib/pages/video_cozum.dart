@@ -83,15 +83,16 @@ class YayinevleriListesi extends StatelessWidget {
                   backgroundColor: _getAvatarColor(index),
                   child: Text(
                     yayinevi.ad[0],
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.secondary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 title: Text(
                   yayinevi.ad,
-                  style: const TextStyle(
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
                     fontSize: 16.0,
                     fontWeight: FontWeight.w500,
                   ),

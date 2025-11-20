@@ -12,12 +12,14 @@ class CustomBottomNavigationBar extends ConsumerWidget {
     final controller = ref.read(homeControllerProvider);
 
     return NavigationBar(
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       selectedIndex: selectedIndex,
       onDestinationSelected: (index) => controller.changeTab(index),
-      indicatorColor: Theme.of(context).colorScheme.onTertiary.withValues(
-        alpha: 0.7,
-      ), // seçili tab arka plan rengi
+
+      // Temadaki NavigationBarTheme çalışsın diye backgroundColor KALDIRILDI
+      indicatorColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.15),
+
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.auto_graph_outlined),
