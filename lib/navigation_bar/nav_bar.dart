@@ -29,7 +29,7 @@ class CustomBottomNavigationBar extends ConsumerWidget {
         NavigationDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
-          label: "Ekle",
+          label: "Kartlar",
         ),
         NavigationDestination(
           icon: Icon(Icons.home_outlined),

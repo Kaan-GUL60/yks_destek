@@ -17,7 +17,7 @@ class YayinevleriListesi extends StatelessWidget {
   // 📝 Statik Yayinevi Verileri
   final List<Yayinevi> yayinevleri = [
     Yayinevi(ad: "345 Yayınları", link: "https://ucdortbesvideo.frns.in/"),
-    Yayinevi(ad: "Orijinal Yayınları", link: "https://orijinalvideo.frns.in"),
+    Yayinevi(ad: "Orijinal Yayınları", link: "https://orjinalvideo.frns.in/"),
     Yayinevi(ad: "Çözüm Yayınları", link: "https://cozum.aciyayinlari.com.tr/"),
     Yayinevi(
       ad: "3D Yayınları",

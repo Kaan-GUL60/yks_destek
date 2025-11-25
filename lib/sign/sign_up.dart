@@ -437,7 +437,7 @@ class _SignUpState extends ConsumerState<SignUp> {
                             : "Maili doğruladım",
                         style: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF1E88E5),
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
                     ),
@@ -463,9 +463,11 @@ class _SignUpState extends ConsumerState<SignUp> {
                         }
                         Navigator.pop(context);
                       },
-                      child: const Text(
+                      child: Text(
                         'Kapat',
-                        style: TextStyle(color: Color(0xFF1E88E5)),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       ),
                     ),
                   ],

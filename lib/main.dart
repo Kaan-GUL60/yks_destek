@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:kgsyks_destek/cloud_message/services.dart';
 import 'package:kgsyks_destek/const.dart';
 import 'package:kgsyks_destek/firebase_options.dart';
@@ -57,10 +58,12 @@ Future<void> main() async {
   String? notificationLaunchPayload;
   final online = await _hasConnection();
   if (online) {
+    //
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     await FirebaseAuth.instance.setLanguageCode('tr');
+    await initializeDateFormatting('tr_TR', "");
 
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
     PlatformDispatcher.instance.onError = (error, stack) {

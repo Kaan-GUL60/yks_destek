@@ -1,66 +1,68 @@
 // ignore_for_file: avoid_print
 
 import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
-import 'package:kgsyks_destek/go_router/router.dart';
-import 'package:kgsyks_destek/pages/favoriler_page/sorular_list_provider.dart';
+import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_karti_ekle.dart';
+// Projenin dosya yollarına göre bunları düzenle:
+import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_list_provider.dart';
+import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_model.dart';
+import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_viewer.dart';
+import 'package:kgsyks_destek/pages/favoriler_page/sorular_list_provider.dart'; // Ders/Konu listesi için
 
-import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
-import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
-import 'package:kgsyks_destek/sign/save_data.dart';
-
-class FavorilerPage extends ConsumerWidget {
-  const FavorilerPage({super.key});
+class BilgiKartlariPage extends ConsumerWidget {
+  const BilgiKartlariPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    //final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = const Color(0xFF0099FF);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
+      // Yeni Bilgi Notu Ekleme Butonu
       floatingActionButton: FloatingActionButton(
         backgroundColor: primaryColor,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white, size: 32),
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          // Bilgi Notu Ekleme Sayfasına Git
+          await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const SoruEkle()),
+            MaterialPageRoute(builder: (_) => const BilgiNotuEklePage()),
           );
+          if (context.mounted) {
+            ref.invalidate(allBilgiNotlariProvider);
+          }
         },
       ),
       body: const Column(
         children: [
-          _FilterControls(), // Filtre Alanı
+          _BilgiFilterControls(), // Filtre Alanı (Özelleştirilmiş)
           SizedBox(height: 10),
-          Expanded(child: _SorularListesi()), // Liste Alanı
+          Expanded(child: _BilgiNotlariListesi()), // Liste Alanı
         ],
       ),
     );
   }
 }
 
-// FİLTRE KONTROLLERİ WIDGET'I
-class _FilterControls extends ConsumerWidget {
-  const _FilterControls();
+// --- FİLTRE KONTROLLERİ ---
+class _BilgiFilterControls extends ConsumerWidget {
+  const _BilgiFilterControls();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final filterState = ref.watch(sorularFilterProvider);
+    // YENİ PROVIDERLARI KULLANIYORUZ
+    final filterState = ref.watch(bilgiFilterProvider);
+    final notifier = ref.read(bilgiFilterProvider.notifier);
+
+    // Ders ve Konu listeleri ortak olduğu için eskileri kullanabiliriz
     final dersler = ref.watch(dersListProvider);
     final konular = ref.watch(konuListProvider);
-    final notifier = ref.read(sorularFilterProvider.notifier);
 
-    // Dekorasyon
     final dropdownDecoration = InputDecoration(
       filled: true,
       fillColor: isDarkMode ? const Color(0xFF1F2937) : Colors.white,
@@ -83,10 +85,11 @@ class _FilterControls extends ConsumerWidget {
           // --- Ders ve Konu Filtreleri ---
           Row(
             children: [
-              // Ders Dropdown
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue: filterState['ders'],
+                  // key ekleyerek state değişiminde yenilenmesini sağlıyoruz
+                  key: ValueKey(filterState.ders ?? 'ders-reset'),
+                  initialValue: filterState.ders,
                   hint: Text('Ders Seç', style: dropdownDecoration.hintStyle),
                   isExpanded: true,
                   icon: Icon(
@@ -102,7 +105,6 @@ class _FilterControls extends ConsumerWidget {
                     fontFamily: GoogleFonts.montserrat().fontFamily,
                   ),
                   decoration: dropdownDecoration,
-                  // DUZELTME: .toSet().toList() ekledik. Aynı ders adı varsa temizler.
                   items: dersler.toSet().toList().map((ders) {
                     return DropdownMenuItem(value: ders, child: Text(ders));
                   }).toList(),
@@ -110,10 +112,11 @@ class _FilterControls extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              // Konu Dropdown
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue: filterState['konu'],
+                  // key ekleyerek state değişiminde yenilenmesini sağlıyoruz
+                  key: ValueKey(filterState.konu ?? 'konu-reset'),
+                  initialValue: filterState.konu,
                   hint: Text('Konu Seç', style: dropdownDecoration.hintStyle),
                   isExpanded: true,
                   icon: Icon(
@@ -129,8 +132,7 @@ class _FilterControls extends ConsumerWidget {
                     fontFamily: GoogleFonts.montserrat().fontFamily,
                   ),
                   decoration: dropdownDecoration,
-                  // DUZELTME: .toSet().toList() ekledik. "Hareket" gibi mükerrer kayıtları siler.
-                  items: (filterState['ders'] != null)
+                  items: (filterState.ders != null)
                       ? konular.toSet().toList().map((konu) {
                           return DropdownMenuItem(
                             value: konu,
@@ -145,35 +147,33 @@ class _FilterControls extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // --- Durum Filtreleri ---
+          // --- ÖNEM DERECESİ FİLTRELERİ (Status yerine) ---
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 FilterButton(
                   label: 'Hepsi',
-                  isSelected: filterState['durum'] == DurumFiltresi.hepsi,
-                  onPressed: () => notifier.setDurum(DurumFiltresi.hepsi),
+                  isSelected: filterState.onemDerecesi == null,
+                  onPressed: () => notifier.setOnemDerecesi(null),
                 ),
                 const SizedBox(width: 10),
                 FilterButton(
-                  label: 'Yanlışlarım',
-                  isSelected: filterState['durum'] == DurumFiltresi.yanlislarim,
-                  onPressed: () => notifier.setDurum(DurumFiltresi.yanlislarim),
+                  label: 'Kritik',
+                  isSelected: filterState.onemDerecesi == 0,
+                  onPressed: () => notifier.setOnemDerecesi(0),
                 ),
                 const SizedBox(width: 10),
                 FilterButton(
-                  label: 'Boşlarım',
-                  isSelected: filterState['durum'] == DurumFiltresi.boslarim,
-                  onPressed: () => notifier.setDurum(DurumFiltresi.boslarim),
+                  label: 'Olağan',
+                  isSelected: filterState.onemDerecesi == 1,
+                  onPressed: () => notifier.setOnemDerecesi(1),
                 ),
                 const SizedBox(width: 10),
                 FilterButton(
-                  label: 'Öğrenildi',
-                  isSelected:
-                      filterState['durum'] == DurumFiltresi.tamamladiklarim,
-                  onPressed: () =>
-                      notifier.setDurum(DurumFiltresi.tamamladiklarim),
+                  label: 'Düşük',
+                  isSelected: filterState.onemDerecesi == 2,
+                  onPressed: () => notifier.setOnemDerecesi(2),
                 ),
               ],
             ),
@@ -184,33 +184,34 @@ class _FilterControls extends ConsumerWidget {
   }
 }
 
-// SORU LİSTESİ WIDGET'I
-class _SorularListesi extends ConsumerWidget {
-  const _SorularListesi();
+// --- BİLGİ NOTU LİSTESİ ---
+class _BilgiNotlariListesi extends ConsumerWidget {
+  const _BilgiNotlariListesi();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final allSorularAsync = ref.watch(allSorularProvider);
-    final filteredSorular = ref.watch(filteredSorularProvider);
+    // YENİ PROVIDERLARI DİNLİYORUZ
+    final allNotesAsync = ref.watch(allBilgiNotlariProvider);
+    final filteredNotes = ref.watch(filteredBilgiNotlariProvider);
 
-    return allSorularAsync.when(
+    return allNotesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Hata: $err')),
       data: (_) {
-        if (filteredSorular.isEmpty) {
+        if (filteredNotes.isEmpty) {
           return Center(
             child: Text(
-              'Bu filtrede gösterilecek soru bulunamadı.',
+              'Bu filtrede gösterilecek not bulunamadı.',
               style: TextStyle(color: Theme.of(context).hintColor),
             ),
           );
         }
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 80),
-          itemCount: filteredSorular.length,
+          itemCount: filteredNotes.length,
           itemBuilder: (context, index) {
-            final soru = filteredSorular[index];
-            return _SoruCard(soru: soru);
+            final not = filteredNotes[index];
+            return _BilgiNotuCard(not: not);
           },
         );
       },
@@ -218,40 +219,46 @@ class _SorularListesi extends ConsumerWidget {
   }
 }
 
-// TEK BİR SORU KARTI WIDGET'I
-class _SoruCard extends StatelessWidget {
-  final SoruModel soru;
-  _SoruCard({required this.soru});
-  final UserAuth auther = UserAuth();
+// --- TEK BİR BİLGİ KARTI ---
+// DÜZELTME: StatelessWidget -> ConsumerWidget
+class _BilgiNotuCard extends ConsumerWidget {
+  final BilgiNotuModel not;
+  const _BilgiNotuCard({required this.not});
 
-  Widget _buildStatusChip(BuildContext context, String durum) {
+  // --- ÖNEM DERECESİ CHIP YAPISI ---
+  Widget _buildPriorityChip(BuildContext context, int onemDerecesi) {
     Color bgColor;
     Color textColor;
-    IconData? icon;
-    String text = durum;
+    IconData icon;
+    String text;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (durum.contains('Yanlış') || durum == 'Yanlış İşaretleme') {
-      bgColor = isDark ? const Color(0xFF452020) : const Color(0xFFFFEbee);
-      textColor = const Color(0xFFE53935);
-      icon = Icons.close;
-      text = "Yanlış";
-    } else if (durum.contains('Boş') || durum == 'Beklemede') {
-      bgColor = isDark ? const Color(0xFF2D333B) : const Color(0xFFF5F5F5);
-      textColor = isDark ? Colors.grey[400]! : Colors.grey[700]!;
-      icon = Icons.remove;
-      text = "Çözülmedi";
-    } else if (durum == 'Öğrenildi' || durum.contains('Öğrenildi')) {
-      bgColor = isDark ? const Color(0xFF1B3A24) : const Color(0xFFE8F5E9);
-      textColor = const Color(0xFF43A047);
-      icon = Icons.check_circle;
-      text = "Öğrenildi";
-    } else {
-      bgColor = isDark ? const Color(0xFF423E20) : const Color(0xFFFFF9C4);
-      textColor = const Color(0xFFFBC02D);
-      icon = Icons.refresh;
-      text = "Tekrar Edilecek";
+    // 0: Kritik, 1: Olağan, 2: Düşük
+    switch (onemDerecesi) {
+      case 0: // Kritik
+        bgColor = isDark ? const Color(0xFF452020) : const Color(0xFFFFEbee);
+        textColor = const Color(0xFFE53935);
+        icon = Icons.local_fire_department_rounded;
+        text = "Kritik";
+        break;
+      case 1: // Olağan
+        bgColor = isDark ? const Color(0xFF423E20) : const Color(0xFFFFF9C4);
+        textColor = const Color(0xFFFBC02D); // Koyu sarı/turuncu
+        icon = Icons.priority_high_rounded;
+        text = "Olağan";
+        break;
+      case 2: // Düşük
+        bgColor = isDark ? const Color(0xFF1B3A24) : const Color(0xFFE8F5E9);
+        textColor = const Color(0xFF43A047);
+        icon = Icons.arrow_downward_rounded;
+        text = "Düşük";
+        break;
+      default:
+        bgColor = Colors.grey;
+        textColor = Colors.black;
+        icon = Icons.help;
+        text = "-";
     }
 
     return Container(
@@ -263,7 +270,8 @@ class _SoruCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ...[Icon(icon, size: 14, color: textColor), const SizedBox(width: 6)],
+          Icon(icon, size: 16, color: textColor),
+          const SizedBox(width: 6),
           Text(
             text,
             style: TextStyle(
@@ -279,7 +287,8 @@ class _SoruCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  // DÜZELTME: WidgetRef ref parametresi eklendi
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDarkMode ? const Color(0xFF191919) : Colors.white;
     final textColor = isDarkMode ? Colors.white : const Color(0xFF1C1E21);
@@ -287,18 +296,13 @@ class _SoruCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-        final result = await Connectivity().checkConnectivity();
-        final online = result.any((r) => r != ConnectivityResult.none);
-        if (online) {
-          await auther.soruSayiArtir("soruAcmaSayisi");
-          AnalyticsService().trackCount("soru_acma", "favoriler_page");
-        }
-        final ctx = context;
-        if (!ctx.mounted) return;
-        context.pushNamed(
-          AppRoute.soruViewer.name,
-          pathParameters: {"id": soru.id.toString()},
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => BilgiNotuViewer(notId: not.id!)),
         );
+        if (context.mounted) {
+          ref.invalidate(allBilgiNotlariProvider);
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -321,13 +325,14 @@ class _SoruCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // RESİM ALANI
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
                   width: 80,
                   height: 80,
                   child: Image.file(
-                    File(soru.imagePath),
+                    File(not.imagePath),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -340,12 +345,13 @@ class _SoruCard extends StatelessWidget {
               ),
               const SizedBox(width: 16),
 
+              // BİLGİLER ALANI
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "${soru.ders} - ${soru.konu}",
+                      "${not.ders} - ${not.konu}",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -357,9 +363,9 @@ class _SoruCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      soru.aciklama != null && soru.aciklama!.length > 2
-                          ? soru.aciklama!
-                          : "Açıklama girilmemiş...",
+                      not.aciklama.length > 2
+                          ? not.aciklama
+                          : "Açıklama yok...",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -369,7 +375,8 @@ class _SoruCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildStatusChip(context, soru.durum),
+                    // YENİ CHIP WIDGET'I
+                    _buildPriorityChip(context, not.onemDerecesi),
                   ],
                 ),
               ),
@@ -386,6 +393,7 @@ class _SoruCard extends StatelessWidget {
   }
 }
 
+// BU BUTON AYNI KALIYOR (Görünüm amaçlı olduğu için)
 class FilterButton extends StatelessWidget {
   final String label;
   final bool isSelected;

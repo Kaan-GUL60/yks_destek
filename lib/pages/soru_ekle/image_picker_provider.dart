@@ -14,7 +14,7 @@ class ImagePickerNotifier extends StateNotifier<File?> {
   // Başlangıç durumunu null olarak ayarlıyoruz.
   ImagePickerNotifier() : super(null);
 
-  File? _image;
+  //File? _image;
 
   final ImagePicker _picker = ImagePicker();
 

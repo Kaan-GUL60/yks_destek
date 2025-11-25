@@ -402,9 +402,9 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                               '${yeniSoru.ders} Hatırlatması ⏰';
                           final String bildirimGovdesi =
                               '${yeniSoru.konu} konusundaki soruyu tekrar etme zamanı!';
-                          debugPrint(
+                          /*debugPrint(
                             "Test bildirimi 5 saniye içinde gönderiliyor (ID: $yeniId)...",
-                          );
+                          );*/
                           /*await scheduleLocalNotification(
                                   notificationId:
                                       yeniId * 10 +
