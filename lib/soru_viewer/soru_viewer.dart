@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +13,7 @@ import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/soru_viewer/drawing_page.dart';
 import 'package:kgsyks_destek/soru_viewer/soru_view_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SoruViewer extends ConsumerWidget {
   final int soruId;
@@ -115,6 +117,14 @@ class SoruViewer extends ConsumerWidget {
     if (picked != null) {
       await _updateHatirlaticiTarih(ref, id, picked);
 
+      if (Platform.isAndroid) {
+        await Permission.notification.request();
+        await fln
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestExactAlarmsPermission();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

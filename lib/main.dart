@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -6,17 +6,15 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kgsyks_destek/cloud_message/services.dart';
-import 'package:kgsyks_destek/const.dart';
 import 'package:kgsyks_destek/firebase_options.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/sign/kontrol_db.dart';
 import 'package:kgsyks_destek/theme_section/app_theme.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 
 //final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -55,6 +53,7 @@ Future<bool> _hasConnection() async {
 final settingStorage = BooleanSettingStorage();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  unawaited(MobileAds.instance.initialize());
   String? notificationLaunchPayload;
   final online = await _hasConnection();
   if (online) {
@@ -86,16 +85,16 @@ Future<void> main() async {
     setupFCM();
     await subscribeToTopic('all');
 
-    if (Platform.isAndroid) {
+    /*if (Platform.isAndroid) {
       await Permission.notification.request();
       await fln
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >()
           ?.requestExactAlarmsPermission();
-    }
+    }*/
 
-    Gemini.init(apiKey: geminiApiKey);
+    //Gemini.init(apiKey: geminiApiKey);
   } else {
     // offline modda sadece lokal işleyiş
     debugPrint('Başlangıç: internet yok, Firebase başlatılmadı');
@@ -109,14 +108,14 @@ Future<void> main() async {
         "Payload (offline-terminated) kaydedildi: $notificationLaunchPayload",
       );
     }
-    if (Platform.isAndroid) {
+    /*if (Platform.isAndroid) {
       await Permission.notification.request();
       await fln
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >()
           ?.requestExactAlarmsPermission();
-    }
+    }*/
   }
   await settingStorage.initializeDatabase();
   await DatabaseHelper.instance.database;

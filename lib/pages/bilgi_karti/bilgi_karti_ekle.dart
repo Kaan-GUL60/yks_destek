@@ -2,9 +2,11 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:gap/gap.dart';
+import 'package:kgsyks_destek/cloud_message/services.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_model.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_providers.dart';
 import 'package:path/path.dart' as p;
@@ -13,7 +15,8 @@ import 'package:path_provider/path_provider.dart';
 // Kendi proje yapına göre import yollarını kontrol et:
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart'; // Ders ve Konu listeleri buradan geliyor
-import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart'; // SoruKayitState
+import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart';
+import 'package:permission_handler/permission_handler.dart'; // SoruKayitState
 
 class BilgiNotuEklePage extends ConsumerStatefulWidget {
   const BilgiNotuEklePage({super.key});
@@ -155,6 +158,14 @@ class _BilgiNotuEklePageState extends ConsumerState<BilgiNotuEklePage> {
       await ref.read(bilgiNotuNotifierProvider.notifier).saveBilgiNotu(yeniNot);
 
       // Bildirim kurma işlemleri buraya eklenebilir (SoruEkle sayfasındaki gibi)
+      if (Platform.isAndroid) {
+        await Permission.notification.request();
+        await fln
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestExactAlarmsPermission();
+      }
     } catch (e) {
       debugPrint("Hata oluştu: $e");
     }

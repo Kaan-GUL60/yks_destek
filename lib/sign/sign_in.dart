@@ -1,7 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
+import 'package:kgsyks_destek/sign/bilgi_database_helper.dart';
+import 'package:kgsyks_destek/sign/kontrol_db.dart';
+import 'package:kgsyks_destek/sign/yerel_kayit.dart';
 
 class SignIn extends ConsumerStatefulWidget {
   const SignIn({super.key});
@@ -9,6 +14,8 @@ class SignIn extends ConsumerStatefulWidget {
   @override
   ConsumerState<SignIn> createState() => _SignInState();
 }
+
+final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 class _SignInState extends ConsumerState<SignIn> {
   final _emailController = TextEditingController();
@@ -204,16 +211,47 @@ class _SignInState extends ConsumerState<SignIn> {
                             if (_formKey.currentState!.validate()) {
                               // --- LOGIC KORUNDU ---
                               try {
-                                await _auth.signInWithEmailAndPassword(
-                                  email: _emailController.text.trim(),
-                                  password: _passwordController.text.trim(),
-                                );
+                                final userCredential = await _auth
+                                    .signInWithEmailAndPassword(
+                                      email: _emailController.text.trim(),
+                                      password: _passwordController.text.trim(),
+                                    );
 
                                 final ctx = context;
                                 if (!ctx.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Hoşgeldiniz')),
                                 );
+
+                                final codeDoc = await _firestore
+                                    .collection("users")
+                                    .doc(userCredential.user!.uid)
+                                    .get();
+
+                                _userKayit(
+                                  codeDoc.data()?['userName'] ?? '',
+                                  codeDoc.data()?['sinav'] != null
+                                      ? Option.values[codeDoc.data()!['sinav']]
+                                      : Option.first,
+                                  codeDoc.data()?['sinif']?.toString() ?? '12',
+                                  codeDoc.data()?['alan'] != null
+                                      ? Option2.values[codeDoc.data()!['alan']]
+                                      : Option2.first,
+                                  codeDoc.data()?['isPro'] ?? false,
+                                );
+                                final storage = BooleanSettingStorage();
+
+                                // 2. Veritabanını başlat (Bu işlem asenkron olduğu için 'await' kullanıyoruz)
+                                await storage.initializeDatabase();
+
+                                // --- VERİ KAYDETME (Örneğin: true olarak kaydet) ---
+                                await storage.saveSetting(true);
+
+                                // --- VERİ OKUMA ---
+
+                                // İsteğe bağlı: İşiniz bitince veritabanını kapatabilirsiniz (genelde açık kalması sorun olmaz)
+                                await storage.closeDatabase();
+
                                 router.goNamed(AppRoute.anaekran.name);
                               } on FirebaseAuthException catch (e) {
                                 String errorMessage = '';
@@ -320,5 +358,35 @@ class _SignInState extends ConsumerState<SignIn> {
         color: Colors.grey, // İkon rengi
       ),
     );
+  }
+
+  void _userKayit(
+    String userName,
+    Option selectedSinav,
+    String selectedSinif,
+    Option2 selectedSinav2,
+    bool isPro,
+  ) async {
+    final yeniKullanici = KullaniciModel(
+      uid: _auth.currentUser!.uid, // Genellikle Firebase Auth'dan alınır
+      userName: userName,
+      email: _auth.currentUser!.email!,
+      profilePhotos:
+          _auth.currentUser!.photoURL ??
+          "", // Kaydedilen profil fotoğrafının yolu
+      sinif: int.parse(
+        selectedSinif,
+      ), // Örneğin bir dropdown'dan gelen int değer (örn: 12)
+      sinav: selectedSinav
+          .index, // Örneğin bir dropdown'dan gelen int değer (örn: 1)
+      alan: selectedSinav2
+          .index, // Örneğin bir dropdown'dan gelen int değer (örn: 2)
+      kurumKodu: _passwordController.text.isEmpty
+          ? ""
+          : _passwordController.text,
+      isPro: isPro, // Örneğin bir checkbox'tan gelen bool değer (true/false)
+    );
+    await KullaniciDatabaseHelper.instance.saveKullanici(yeniKullanici);
+    router.goNamed(AppRoute.anaekran.name);
   }
 }

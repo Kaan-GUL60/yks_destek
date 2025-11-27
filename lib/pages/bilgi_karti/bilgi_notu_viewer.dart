@@ -4,12 +4,16 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kgsyks_destek/cloud_message/services.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_database_helper.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_model.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_providers.dart';
+import 'package:kgsyks_destek/soru_viewer/drawing_page.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // Eğer 'scheduleLocalNotification' başka bir yerdeyse import et:
 // import 'package:kgsyks_destek/cloud_message/services.dart';
@@ -112,6 +116,14 @@ class BilgiNotuViewer extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Hatırlatıcı tarihi güncellendi!')),
       );
+    }
+    if (Platform.isAndroid) {
+      await Permission.notification.request();
+      await fln
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestExactAlarmsPermission();
     }
   }
 
@@ -224,44 +236,54 @@ class BilgiNotuViewer extends ConsumerWidget {
                   const Gap(24),
 
                   // --- Resim Alanı ---
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1F2937)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        if (!isDark)
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: not.imagePath.isNotEmpty
-                          ? Image.file(
-                              File(not.imagePath),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const SizedBox(
-                                  height: 200,
-                                  child: Center(
-                                    child: Icon(Icons.broken_image, size: 50),
-                                  ),
-                                );
-                              },
-                            )
-                          : const SizedBox(
-                              height: 200,
-                              child: Center(
-                                child: Icon(Icons.image_not_supported),
-                              ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DrawingPage(imagePath: not.imagePath),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1F2937)
+                            : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.grey.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: not.imagePath.isNotEmpty
+                            ? Image.file(
+                                File(not.imagePath),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const SizedBox(
+                                    height: 200,
+                                    child: Center(
+                                      child: Icon(Icons.broken_image, size: 50),
+                                    ),
+                                  );
+                                },
+                              )
+                            : const SizedBox(
+                                height: 200,
+                                child: Center(
+                                  child: Icon(Icons.image_not_supported),
+                                ),
+                              ),
+                      ),
                     ),
                   ),
                   const Gap(24),

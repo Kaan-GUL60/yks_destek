@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:gap/gap.dart';
@@ -20,6 +21,7 @@ import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 DateTime? selectedDate;
 
@@ -443,6 +445,14 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                               scheduledTime: saat15,
                               imagePath: yeniSoru.imagePath,
                             );
+                          }
+                          if (Platform.isAndroid) {
+                            await Permission.notification.request();
+                            await fln
+                                .resolvePlatformSpecificImplementation<
+                                  AndroidFlutterLocalNotificationsPlugin
+                                >()
+                                ?.requestExactAlarmsPermission();
                           }
 
                           debugPrint(

@@ -4,6 +4,9 @@
 	<dict>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<key>GADApplicationIdentifier</key>
+		<string>ca-app-pub-8502305768894126~3604313131</string>
+		<!--ca-app-pub-8502305768894126~3604313131-->
 		<key>CFBundleDisplayName</key>
 		<string>Kgsyks Destek</string>
 		<key>CFBundleExecutable</key>

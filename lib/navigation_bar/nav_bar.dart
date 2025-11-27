@@ -27,8 +27,8 @@ class CustomBottomNavigationBar extends ConsumerWidget {
           label: "Analiz",
         ),
         NavigationDestination(
-          icon: Icon(Icons.dashboard_outlined),
-          selectedIcon: Icon(Icons.dashboard),
+          icon: Icon(Icons.library_books_outlined),
+          selectedIcon: Icon(Icons.library_books),
           label: "Kartlar",
         ),
         NavigationDestination(

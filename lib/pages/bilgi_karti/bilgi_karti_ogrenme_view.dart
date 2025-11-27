@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_model.dart';
-import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_ogrenme_provider.dart'; // Oluşturduğumuz provider
+import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_ogrenme_provider.dart';
+import 'package:kgsyks_destek/soru_viewer/drawing_page.dart'; // Oluşturduğumuz provider
 
 class BilgiKartiOgrenmePage extends ConsumerStatefulWidget {
   const BilgiKartiOgrenmePage({super.key});
@@ -204,165 +205,179 @@ class _FlashCardItem extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 1. KATMAN: RESİM (Tam ekran veya büyük kısım)
-            Image.file(
-              File(not.imagePath),
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
-                color: isDark ? Colors.grey[800] : Colors.grey[200],
-                child: const Icon(
-                  Icons.broken_image,
-                  size: 50,
-                  color: Colors.grey,
-                ),
-              ),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DrawingPage(imagePath: not.imagePath),
             ),
-
-            // 2. KATMAN: KARARTMA GRADIENTİ (Yazı okunabilsin diye)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.7), // Altta koyulaşır
-                      Colors.black.withValues(alpha: 0.95),
-                    ],
-                    stops: const [0.0, 0.5, 0.8, 1.0],
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 1. KATMAN: RESİM (Tam ekran veya büyük kısım)
+              Image.file(
+                File(not.imagePath),
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  color: isDark ? Colors.grey[800] : Colors.grey[200],
+                  child: const Icon(
+                    Icons.broken_image,
+                    size: 50,
+                    color: Colors.grey,
                   ),
                 ),
               ),
-            ),
 
-            // 3. KATMAN: BİLGİLER (En altta)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Ders ve Konu Etiketi
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0099FF),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            not.ders,
-                            style: GoogleFonts.montserrat(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: priorityColor.withValues(
-                              alpha: 0.2,
-                            ), // Transparan arka plan
-                            border: Border.all(
-                              color: priorityColor,
-                              width: 1.5,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.circle, size: 8, color: priorityColor),
-                              const SizedBox(width: 6),
-                              Text(
-                                _getPriorityLabel(not.onemDerecesi),
-                                style: GoogleFonts.montserrat(
-                                  color:
-                                      priorityColor, // Metin rengini de parlak yapalım (siyah zeminde okunur)
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+              // 2. KATMAN: KARARTMA GRADIENTİ (Yazı okunabilsin diye)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.7), // Altta koyulaşır
+                        Colors.black.withValues(alpha: 0.95),
                       ],
+                      stops: const [0.0, 0.5, 0.8, 1.0],
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                ),
+              ),
 
-                    // Konu Başlığı
-                    Text(
-                      not.konu,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+              // 3. KATMAN: BİLGİLER (En altta)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Ders ve Konu Etiketi
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0099FF),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              not.ders,
+                              style: GoogleFonts.montserrat(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: priorityColor.withValues(
+                                alpha: 0.2,
+                              ), // Transparan arka plan
+                              border: Border.all(
+                                color: priorityColor,
+                                width: 1.5,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.circle,
+                                  size: 8,
+                                  color: priorityColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _getPriorityLabel(not.onemDerecesi),
+                                  style: GoogleFonts.montserrat(
+                                    color:
+                                        priorityColor, // Metin rengini de parlak yapalım (siyah zeminde okunur)
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 12),
 
-                    // Açıklama Metni
-                    Container(
-                      constraints: const BoxConstraints(
-                        maxHeight: 120,
-                      ), // Çok uzunsa taşmasın
-                      child: SingleChildScrollView(
-                        child: Text(
-                          not.aciklama,
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 15,
-                            height: 1.4,
+                      // Konu Başlığı
+                      Text(
+                        not.konu,
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Açıklama Metni
+                      Container(
+                        constraints: const BoxConstraints(
+                          maxHeight: 120,
+                        ), // Çok uzunsa taşmasın
+                        child: SingleChildScrollView(
+                          child: Text(
+                            not.aciklama,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 15,
+                              height: 1.4,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
+                      const SizedBox(height: 10),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // 4. KATMAN (Opsiyonel): Sağ üst köşeye tarih vb. eklenebilir
-            Positioned(
-              top: 20,
-              right: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black45,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  "${not.eklenmeTarihi.day}.${not.eklenmeTarihi.month}.${not.eklenmeTarihi.year}",
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+              // 4. KATMAN (Opsiyonel): Sağ üst köşeye tarih vb. eklenebilir
+              Positioned(
+                top: 20,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "${not.eklenmeTarihi.day}.${not.eklenmeTarihi.month}.${not.eklenmeTarihi.year}",
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
