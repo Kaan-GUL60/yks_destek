@@ -1,5 +1,5 @@
 # Hedef iOS surumunu 15.0 olarak belirledik (Firebase icin gerekli)
-platform :ios, '15.0'
+platform :ios, '16.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
