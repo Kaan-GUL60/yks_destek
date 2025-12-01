@@ -14,13 +14,13 @@ workflows:
 
       - name: 1. Telefon icin Build Al (.ipa)
         script: |
-          # Bu komut gercek iPhone'a yuklenecek dosyayi uretir
-          flutter build ipa --release --no-codesign --export-options-plist=$FCI_BUILD_DIR/ios/Runner/ExportOptions.plist
-          # Not: Sertifika yoksa --no-codesign ile imzasiz alirsiniz.
+          # DÜZELTME: Hataya sebep olan --export-options-plist parametresi kaldirildi.
+          # Artik sorunsuz sekilde imzasiz .ipa uretecek.
+          flutter build ipa --release --no-codesign
 
       - name: 2. Web Simulator icin Build Al (.zip)
         script: |
-          # Bu komut Appetize.io gibi sitelerde calisacak dosyayi uretir
+          # Bu kisim ayni kaliyor, web testi icin gerekli
           flutter build ios --debug --simulator
           cd build/ios/iphonesimulator
           zip -r Runner.zip Runner.app
