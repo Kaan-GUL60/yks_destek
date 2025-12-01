@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,7 +8,6 @@ import 'package:gap/gap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // YENİ KÜTÜPHANE
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_karti_ekle.dart';
 import 'package:kgsyks_destek/pages/dashboard_provider.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_analiz_page.dart';
@@ -54,9 +51,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
     // Test için 'tutorial_coach_v1' anahtarını kullandım.
     bool isShown = prefs.getBool('tutorial_coach_v3') ?? false;
 
-    print("Tutorial daha önce gösterildi mi? $isShown");
+    //print("Tutorial daha önce gösterildi mi? $isShown");
     if (!isShown && mounted) {
-      print("Tutorial daha önce gösterildi mi---? $isShown");
+      //print("Tutorial daha önce gösterildi mi---? $isShown");
       _createTutorial(); // Hedefleri hazırla
       tutorialCoachMark.show(context: context); // Göster
     }

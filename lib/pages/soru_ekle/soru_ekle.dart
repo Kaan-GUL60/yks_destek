@@ -2,7 +2,8 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+//import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +18,7 @@ import 'package:kgsyks_destek/pages/soru_ekle/list_providers.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
-import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
+//import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -37,7 +38,8 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
   final _formKey = GlobalKey<FormState>();
   final _controllerAciklama = TextEditingController();
 
-  final Gemini _gemini = Gemini.instance;
+  //final Gemini _gemini = Gemini.instance;
+
   // ignore: unused_field
   final bool _ekranKontorl = false;
   String dersAi = "";
@@ -81,8 +83,6 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     final File? selectedImage = ref.watch(imagePickerProvider);
 
     final soruKayitState = ref.watch(soruNotifierProvider);
-
-    final UserAuth auth = UserAuth();
 
     ref.listen<SoruKayitState>(soruNotifierProvider, (previous, next) {
       if (next == SoruKayitState.success) {
@@ -367,11 +367,15 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                           hatirlaticiTarihi: selectedDate2,
                         );
 
-                        auth.soruSayiArtir("soruSayi");
-                        AnalyticsService().trackCount(
-                          "buttonClick",
-                          "soru_eklendi",
-                        ); // soru sayıyor
+                        final online = await _hasConnection();
+                        if (online) {
+                          final UserAuth auth = UserAuth();
+                          auth.soruSayiArtir("soruSayi");
+                          AnalyticsService().trackCount(
+                            "buttonClick",
+                            "soru_eklendi",
+                          ); // soru sayıyor
+                        }
 
                         //**************************************************************
 
@@ -856,7 +860,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
 */
   // The getGeminiAnalysis() function to be implemented
 
-  Future<Map<String, String>> getGeminiAnalysis() async {
+  /*Future<Map<String, String>> getGeminiAnalysis() async {
     final text = ref.read(ocrResultProvider);
     if (text == null || text.isEmpty) {
       return {'ders': '', 'konu': ''};
@@ -949,5 +953,10 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     }
 
     return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
-  }
+  }*/
+}
+
+Future<bool> _hasConnection() async {
+  final results = await Connectivity().checkConnectivity();
+  return results.any((r) => r != ConnectivityResult.none);
 }

@@ -27,7 +27,7 @@ class MainTabsPage extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 1, // Hafif bir gölge (resimdeki çizgi efekti için)
-          shadowColor: Colors.black12,
+          //shadowColor: Colors.black12,
           toolbarHeight:
               0, // Standart AppBar başlığını gizle, sadece TabBar kalsın
           bottom: PreferredSize(

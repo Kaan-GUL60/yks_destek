@@ -209,6 +209,7 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
           backgroundColor: bgColor,
           foregroundColor: textColor,
           bottom: TabBar(
+            dividerColor: Colors.transparent, // Çizgiyi şeffaf yapar
             indicatorColor: primaryColor,
             labelColor: primaryColor,
             unselectedLabelColor: Colors.grey,
