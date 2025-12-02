@@ -32,7 +32,7 @@ class CustomBottomNavigationBar extends ConsumerWidget {
       'icon': Icons.home_outlined,
       'activeIcon': Icons.home,
       // iOS Ev ikonu
-      'iosIcon': CupertinoIcons.house,
+      'iosIcon': CupertinoIcons.home,
       'iosActiveIcon': CupertinoIcons.house_fill,
     },
     {
@@ -68,11 +68,10 @@ class CustomBottomNavigationBar extends ConsumerWidget {
         onTap: (index) => controller.changeTab(index),
         activeColor: primaryColor,
         inactiveColor: Colors.grey,
-        // iOS standartlarına uygun hafif şeffaf arka plan
         backgroundColor: isDarkMode
             ? const Color(0xCC1E252F)
             : const Color(0xCCFFFFFF),
-        iconSize: 28, // iOS ikonları genelde bir tık daha büyüktür
+        iconSize: 28,
         border: Border(
           top: BorderSide(
             color: isDarkMode ? Colors.white12 : Colors.black12,
@@ -81,9 +80,16 @@ class CustomBottomNavigationBar extends ConsumerWidget {
         ),
         items: _navItems.map((item) {
           return BottomNavigationBarItem(
-            // iOS ikonlarını kullanıyoruz
-            icon: Icon(item['iosIcon']),
-            activeIcon: Icon(item['iosActiveIcon']),
+            // DÜZELTME BURADA: İkonu Padding içine aldık
+            icon: Padding(
+              padding: const EdgeInsets.only(top: 6.0, bottom: 2.0),
+              child: Icon(item['iosIcon']),
+            ),
+            // Tıklandığında zıplama olmaması için activeIcon'a da aynısını yapıyoruz
+            activeIcon: Padding(
+              padding: const EdgeInsets.only(top: 6.0, bottom: 2.0),
+              child: Icon(item['iosActiveIcon']),
+            ),
             label: item['label'],
           );
         }).toList(),

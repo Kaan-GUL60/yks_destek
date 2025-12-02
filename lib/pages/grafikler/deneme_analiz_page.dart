@@ -1,11 +1,13 @@
+import 'dart:io'; // Platform kontrolü
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/cupertino.dart'; // iOS widget'ları
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_analiz_provider.dart';
-import 'package:kgsyks_destek/pages/grafikler/deneme_ekle_page.dart'; // Provider dosyası
+import 'package:kgsyks_destek/pages/grafikler/deneme_ekle_page.dart';
 
 class DenemeAnalizPage extends ConsumerWidget {
   const DenemeAnalizPage({super.key});
@@ -15,7 +17,7 @@ class DenemeAnalizPage extends ConsumerWidget {
     final selectedTab = ref.watch(analizTabProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
-    final primaryColor = const Color(0xFF0099FF); // Uygulamanın ana rengi
+    final primaryColor = const Color(0xFF0099FF);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -48,32 +50,40 @@ class DenemeAnalizPage extends ConsumerWidget {
                   color: primaryColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 20),
+                // İYİLEŞTİRME 1: Platforma Duyarlı İkon
+                child: Icon(
+                  Platform.isIOS ? CupertinoIcons.add : Icons.add,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const Gap(10),
-          // 1. TOGGLE BUTONU (TYT / AYT)
-          _buildCustomToggle(ref, selectedTab, primaryColor, isDark),
+      // İYİLEŞTİRME 2: SafeArea
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Gap(10),
+            // 1. TOGGLE BUTONU (TYT / AYT)
+            _buildCustomToggle(ref, selectedTab, primaryColor, isDark),
 
-          const Gap(20),
+            const Gap(20),
 
-          // 2. İÇERİK (GRAFİK + LİSTE)
-          Expanded(
-            child: selectedTab == 0
-                ? const _TytAnalizView()
-                : const _AytAnalizView(),
-          ),
-        ],
+            // 2. İÇERİK (GRAFİK + LİSTE)
+            Expanded(
+              child: selectedTab == 0
+                  ? const _TytAnalizView()
+                  : const _AytAnalizView(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Özel Toggle Tasarımı (Resimdeki gibi)
+  // Özel Toggle Tasarımı (Korundu)
   Widget _buildCustomToggle(
     WidgetRef ref,
     int selectedTab,
@@ -148,7 +158,12 @@ class _TytAnalizView extends ConsumerWidget {
     final tytListAsync = ref.watch(tytListProvider);
 
     return tytListAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      // İYİLEŞTİRME 3: Platforma Duyarlı Loading
+      loading: () => Center(
+        child: Platform.isIOS
+            ? const CupertinoActivityIndicator()
+            : const CircularProgressIndicator(),
+      ),
       error: (err, stack) => Center(child: Text("Hata: $err")),
       data: (denemeler) {
         if (denemeler.isEmpty) {
@@ -159,16 +174,18 @@ class _TytAnalizView extends ConsumerWidget {
         final List<double> netler = denemeler
             .map((d) => hesaplaTytNet(d))
             .toList();
-        final double sonNet = netler.last; // En son eklenen denemenin neti
+        final double sonNet = netler.last;
         final double ortalama = netler.reduce((a, b) => a + b) / netler.length;
 
-        // Grafik için veri hazırla (Index, Net)
+        // Grafik için veri hazırla
         final List<FlSpot> spots = [];
         for (int i = 0; i < netler.length; i++) {
           spots.add(FlSpot(i.toDouble(), netler[i]));
         }
 
         return ListView(
+          // İYİLEŞTİRME 4: iOS Esneme Efekti
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
             // GRAFİK KARTI
@@ -191,7 +208,7 @@ class _TytAnalizView extends ConsumerWidget {
             ),
             const Gap(12),
 
-            // LİSTE (Ters çeviriyoruz ki en son eklenen en üstte olsun)
+            // LİSTE
             ...denemeler.reversed.map((deneme) {
               final net = hesaplaTytNet(deneme);
               return _DenemeListItem(
@@ -219,7 +236,12 @@ class _AytAnalizView extends ConsumerWidget {
     final aytListAsync = ref.watch(aytListProvider);
 
     return aytListAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      // İYİLEŞTİRME 3: Platforma Duyarlı Loading
+      loading: () => Center(
+        child: Platform.isIOS
+            ? const CupertinoActivityIndicator()
+            : const CircularProgressIndicator(),
+      ),
       error: (err, stack) => Center(child: Text("Hata: $err")),
       data: (denemeler) {
         if (denemeler.isEmpty) {
@@ -238,6 +260,8 @@ class _AytAnalizView extends ConsumerWidget {
         }
 
         return ListView(
+          // İYİLEŞTİRME 4: iOS Esneme Efekti
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
             _ChartCard(
@@ -273,9 +297,8 @@ class _AytAnalizView extends ConsumerWidget {
   }
 }
 
-// --- WIDGETLAR ---
+// --- WIDGETLAR (Aynı kaldı) ---
 
-// 1. Grafik ve Özet Kartı
 class _ChartCard extends StatelessWidget {
   final String title;
   final double currentNet;
@@ -294,9 +317,8 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Tasarımdaki koyu kart rengi veya light modda beyaz
     final cardColor = isDark ? const Color(0xFF1F2937) : Colors.white;
-    final lineColor = const Color(0xFF8B5CF6); // Grafikteki mor renk
+    final lineColor = const Color(0xFF8B5CF6);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -348,34 +370,29 @@ class _ChartCard extends StatelessWidget {
 
           // --- GRAFİK ALANI ---
           SizedBox(
-            height: 150, // Grafik Yüksekliği
+            height: 150,
             child: LineChart(
               LineChartData(
                 gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(
-                  show: false,
-                ), // Eksen yazılarını gizledim, sade olsun diye
+                titlesData: const FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
                 minX: 0,
                 maxX: (spots.length - 1).toDouble(),
                 minY: 0,
-                // Maksimum Y'yi nete göre biraz yukarıda tutalım ki grafik tavana yapışmasın
                 maxY:
                     (spots.map((e) => e.y).reduce((a, b) => a > b ? a : b)) +
                     10,
                 lineBarsData: [
                   LineChartBarData(
                     spots: spots,
-                    isCurved: true, // Kıvrımlı çizgi
+                    isCurved: true,
                     color: lineColor,
                     barWidth: 4,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: lineColor.withValues(
-                        alpha: 0.1,
-                      ), // Çizgi altı gölgesi
+                      color: lineColor.withValues(alpha: 0.1),
                     ),
                   ),
                 ],
@@ -388,7 +405,6 @@ class _ChartCard extends StatelessWidget {
   }
 }
 
-// 2. Liste Elemanı Kartı
 class _DenemeListItem extends StatelessWidget {
   final String ad;
   final DateTime tarih;
@@ -454,7 +470,7 @@ class _DenemeListItem extends StatelessWidget {
               Text(
                 net.toStringAsFixed(2),
                 style: const TextStyle(
-                  color: Color(0xFF8B5CF6), // Mor renk
+                  color: Color(0xFF8B5CF6),
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),

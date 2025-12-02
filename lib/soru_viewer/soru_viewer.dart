@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -106,14 +107,54 @@ class SoruViewer extends ConsumerWidget {
     }
   }
 
-  // Tarih seçiciyi açar
+  // --- PLATFORMA DUYARLI TARİH SEÇİCİ ---
   Future<void> _selectDate(BuildContext context, WidgetRef ref, int id) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-    );
+    DateTime? picked;
+    final initialDate = DateTime.now();
+
+    if (Platform.isIOS) {
+      // iOS İÇİN: CupertinoDatePicker
+      await showCupertinoModalPopup(
+        context: context,
+        builder: (_) => Container(
+          height: 250,
+          color: const Color.fromARGB(255, 255, 255, 255),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 180,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: initialDate,
+                  minimumDate: initialDate,
+                  maximumDate: DateTime(2101),
+                  onDateTimeChanged: (val) {
+                    picked = val;
+                  },
+                ),
+              ),
+              CupertinoButton(
+                child: const Text('Tamam'),
+                onPressed: () {
+                  // Kullanıcı hiç çevirmeden basarsa bugünü seçmiş sayalım
+                  picked ??= initialDate;
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // ANDROID İÇİN: Material DatePicker
+      picked = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: initialDate,
+        lastDate: DateTime(2101),
+      );
+    }
+
     if (picked != null) {
       await _updateHatirlaticiTarih(ref, id, picked);
 
@@ -125,10 +166,19 @@ class SoruViewer extends ConsumerWidget {
             >()
             ?.requestExactAlarmsPermission();
       }
+      // iOS İÇİN EKSTRA İZİN İSTEĞİ
+      else if (Platform.isIOS) {
+        await fln
+            .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin
+            >()
+            ?.requestPermissions(alert: true, badge: true, sound: true);
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Hatırlatıcı tarihi ${picked.day}.${picked.month}.${picked.year} olarak güncellendi!',
+            'Hatırlatıcı tarihi ${picked!.day}.${picked!.month}.${picked!.year} olarak güncellendi!',
           ),
         ),
       );
@@ -164,462 +214,509 @@ class SoruViewer extends ConsumerWidget {
           },
         ),
       ),
-      body: soruAsyncValue.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Bir hata oluştu: $error')),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
+          child: soruAsyncValue.when(
+            loading: () => Center(
+              child: Platform.isIOS
+                  ? const CupertinoActivityIndicator()
+                  : const CircularProgressIndicator(),
+            ),
+            error: (error, stack) =>
+                Center(child: Text('Bir hata oluştu: $error')),
 
-        data: (soru) {
-          if (soru == null) {
-            return const Center(child: Text("Soru bulunamadı."));
-          }
+            data: (soru) {
+              if (soru == null) {
+                return const Center(child: Text("Soru bulunamadı."));
+              }
 
-          if (aciklamaController.text.isEmpty && soru.aciklama != null) {
-            aciklamaController.text = soru.aciklama!;
-            debugPrint('Açıklama yüklendi: ${soru.aciklama}');
-          }
+              if (aciklamaController.text.isEmpty && soru.aciklama != null) {
+                aciklamaController.text = soru.aciklama!;
+                debugPrint('Açıklama yüklendi: ${soru.aciklama}');
+              }
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    soru.ders,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: primaryBlue,
-                    ),
-                  ),
-                  const Gap(4),
-                  Text(
-                    soru.konu,
-                    style: GoogleFonts.inter(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  const Gap(16),
-                  // --- Bilgi Çipleri (Öğrenilecek / Tarih) ---
-                  Builder(
-                    builder: (context) {
-                      // --- Senin Verdiğin Renk/İkon Mantığı ---
-                      Color statusBgColor;
-                      Color statusTextColor;
-                      IconData statusIcon;
-                      String statusText;
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        soru.ders,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: primaryBlue,
+                        ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        soru.konu,
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const Gap(16),
+                      // --- Bilgi Çipleri (Öğrenilecek / Tarih) ---
+                      Builder(
+                        builder: (context) {
+                          // --- Senin Verdiğin Renk/İkon Mantığı ---
+                          Color statusBgColor;
+                          Color statusTextColor;
+                          IconData statusIcon;
+                          String statusText;
 
-                      // 'durum' değişkeni yerine 'soru.durum' kullanıyoruz
-                      if (soru.durum.contains('Yanlış') ||
-                          soru.durum == 'Yanlış İşaretleme') {
-                        statusBgColor = isDark
-                            ? const Color(0xFF452020)
-                            : const Color(0xFFFFEbee);
-                        statusTextColor = const Color(0xFFE53935);
-                        statusIcon = Icons.close;
-                        statusText = "Yanlış";
-                      } else if (soru.durum.contains('Boş') ||
-                          soru.durum == 'Beklemede') {
-                        statusBgColor = isDark
-                            ? const Color(0xFF2D333B)
-                            : const Color(0xFFF5F5F5);
-                        statusTextColor = isDark
-                            ? Colors.grey[400]!
-                            : Colors.grey[700]!;
-                        statusIcon = Icons.remove;
-                        statusText = "Çözülmedi";
-                      } else if (soru.durum == 'Öğrenildi' ||
-                          soru.durum.contains('Öğrenildi')) {
-                        statusBgColor = isDark
-                            ? const Color(0xFF1B3A24)
-                            : const Color(0xFFE8F5E9);
-                        statusTextColor = const Color(0xFF43A047);
-                        statusIcon = Icons.check_circle;
-                        statusText = "Öğrenildi";
-                      } else {
-                        statusBgColor = isDark
-                            ? const Color(0xFF423E20)
-                            : const Color(0xFFFFF9C4);
-                        statusTextColor = const Color(0xFFFBC02D);
-                        statusIcon = Icons.refresh;
-                        statusText = "Tekrar Edilecek";
-                      }
+                          // 'durum' değişkeni yerine 'soru.durum' kullanıyoruz
+                          if (soru.durum.contains('Yanlış') ||
+                              soru.durum == 'Yanlış İşaretleme') {
+                            statusBgColor = isDark
+                                ? const Color(0xFF452020)
+                                : const Color(0xFFFFEbee);
+                            statusTextColor = const Color(0xFFE53935);
+                            statusIcon = Icons.close;
+                            statusText = "Yanlış";
+                          } else if (soru.durum.contains('Boş') ||
+                              soru.durum == 'Beklemede') {
+                            statusBgColor = isDark
+                                ? const Color(0xFF2D333B)
+                                : const Color(0xFFF5F5F5);
+                            statusTextColor = isDark
+                                ? Colors.grey[400]!
+                                : Colors.grey[700]!;
+                            statusIcon = Icons.remove;
+                            statusText = "Çözülmedi";
+                          } else if (soru.durum == 'Öğrenildi' ||
+                              soru.durum.contains('Öğrenildi')) {
+                            statusBgColor = isDark
+                                ? const Color(0xFF1B3A24)
+                                : const Color(0xFFE8F5E9);
+                            statusTextColor = const Color(0xFF43A047);
+                            statusIcon = Icons.check_circle;
+                            statusText = "Öğrenildi";
+                          } else {
+                            statusBgColor = isDark
+                                ? const Color(0xFF423E20)
+                                : const Color(0xFFFFF9C4);
+                            statusTextColor = const Color(0xFFFBC02D);
+                            statusIcon = Icons.refresh;
+                            statusText = "Tekrar Edilecek";
+                          }
 
-                      return Row(
+                          return Row(
+                            children: [
+                              // Dinamik Durum Çipi
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusBgColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      statusIcon,
+                                      size: 16,
+                                      color: statusTextColor,
+                                    ),
+                                    const Gap(6),
+                                    Text(
+                                      statusText,
+                                      style: TextStyle(
+                                        color: statusTextColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Gap(12),
+
+                              // Tarih Çipi (Burası değişmedi, sadece yanına eklendi)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF374151)
+                                      : const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today_outlined,
+                                      size: 16,
+                                      color: isDark
+                                          ? Colors.grey[300]
+                                          : Colors.grey[600],
+                                    ),
+                                    const Gap(6),
+                                    Text(
+                                      soru.hatirlaticiTarihi != null
+                                          ? "${soru.hatirlaticiTarihi!.day} ${['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'][soru.hatirlaticiTarihi!.month - 1]} ${soru.hatirlaticiTarihi!.year}"
+                                          : 'Tarih Yok',
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.grey[300]
+                                            : Colors.grey[600],
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+
+                      const Gap(24),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(
+                          16,
+                        ), // Resim etrafında padding
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1F2937)
+                              : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            if (!isDark)
+                              BoxShadow(
+                                color: Colors.grey.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Görselin kendisi
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: soru.imagePath.isNotEmpty
+                                  ? Image.file(
+                                      File(soru.imagePath),
+                                      height: 250,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      height: 200,
+                                      width: double.infinity,
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(Icons.image_not_supported),
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(24),
+
+                      // --- Butonlar (Soruyu Çöz / Tarih Ayarla) ---
+                      Row(
                         children: [
-                          // Dinamik Durum Çipi
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: statusBgColor,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  statusIcon,
-                                  size: 16,
-                                  color: statusTextColor,
-                                ),
-                                const Gap(6),
-                                Text(
-                                  statusText,
-                                  style: TextStyle(
-                                    color: statusTextColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        DrawingPage(imagePath: soru.imagePath),
                                   ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryBlue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
                                 ),
-                              ],
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: Icon(
+                                Platform.isIOS
+                                    ? CupertinoIcons.pencil_outline
+                                    : Icons.edit,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                "Soruyu Çöz",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ),
                           const Gap(12),
-
-                          // Tarih Çipi (Burası değişmedi, sadece yanına eklendi)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF374151)
-                                  : const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 16,
-                                  color: isDark
-                                      ? Colors.grey[300]
-                                      : Colors.grey[600],
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  _selectDate(context, ref, soru.id!),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isDark
+                                    ? const Color(0xFF374151)
+                                    : Colors.white,
+                                foregroundColor: isDark
+                                    ? Colors.white
+                                    : Colors.black87,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
                                 ),
-                                const Gap(6),
-                                Text(
-                                  soru.hatirlaticiTarihi != null
-                                      ? "${soru.hatirlaticiTarihi!.day} ${['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'][soru.hatirlaticiTarihi!.month - 1]} ${soru.hatirlaticiTarihi!.year}"
-                                      : 'Tarih Yok',
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? Colors.grey[300]
-                                        : Colors.grey[600],
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: isDark
+                                      ? BorderSide.none
+                                      : BorderSide(color: Colors.grey.shade300),
                                 ),
-                              ],
+                                elevation: 0,
+                              ),
+                              icon: Icon(
+                                Platform.isIOS
+                                    ? CupertinoIcons.calendar
+                                    : Icons.calendar_month,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                "Tarih Ayarla",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ),
                         ],
-                      );
-                    },
-                  ),
+                      ),
 
-                  const Gap(24),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(
-                      16,
-                    ), // Resim etrafında padding
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1F2937)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        if (!isDark)
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Görselin kendisi
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: soru.imagePath.isNotEmpty
-                              ? Image.file(
-                                  File(soru.imagePath),
-                                  height: 250,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  height: 200,
-                                  width: double.infinity,
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: Icon(Icons.image_not_supported),
-                                  ),
-                                ),
+                      const Gap(30),
+                      // --- Cevabınız Kısmı (Orijinal Mantık Korundu) ---
+                      Text(
+                        "Cevabınız",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
-                      ],
-                    ),
-                  ),
-                  const Gap(24),
+                      ),
+                      const Gap(12),
+                      // DÜZELTME: Senin yazdığın SegmentedButton mantığı burada aynen duruyor.
+                      // Sadece 'style' kısmını görsele benzetmek için güncelledim.
+                      SizedBox(
+                        width: double.infinity,
 
-                  // --- Butonlar (Soruyu Çöz / Tarih Ayarla) ---
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    DrawingPage(imagePath: soru.imagePath),
+                        child: SegmentedButton<OptionSoruCevabi>(
+                          emptySelectionAllowed: true,
+                          segments: OptionSoruCevabi.values.map((e) {
+                            return ButtonSegment<OptionSoruCevabi>(
+                              value: e,
+                              label: Text(
+                                e.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          selected: {
+                            ref.watch(soruCevabiProvider),
+                          }.whereType<OptionSoruCevabi>().toSet(),
+                          onSelectionChanged: (newSelection) {
+                            // --- BURASI SENİN ORİJİNAL KODUN ---
+                            // Kullanıcı seçim yaptığında çalışacak, doğru/yanlış kontrolü yapacak.
+                            final selectedCevap = newSelection.first;
+
+                            if (ref.read(soruCevabiProvider) == null) {
+                              ref.read(soruCevabiProvider.notifier).state =
+                                  selectedCevap;
+
+                              // --- DURUM GÜNCELLEME MANTIĞI ---
+                              if (soru.soruCevap == selectedCevap.name) {
+                                // DOĞRU CEVAP
+                                _updateSoruDurum(
+                                  ref,
+                                  soru.id!,
+                                  'Öğrenildi',
+                                  '',
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Doğru cevap! Soru durumu 'Öğrenildi' olarak güncellendi.",
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else {
+                                // YANLIŞ CEVAP
+                                final hataNedeni =
+                                    "Seçim: ${selectedCevap.name}, Doğru: ${soru.soruCevap}";
+                                _updateSoruDurum(
+                                  ref,
+                                  soru.id!,
+                                  'Öğrenilecek',
+                                  hataNedeni,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      "Yanlış cevap! Doğru cevap: ${soru.soruCevap}. Durum 'Öğrenilecek' olarak güncellendi.",
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          // Tasarım iyileştirmeleri (Mantığı etkilemez)
+                          showSelectedIcon: false,
+                          style: ButtonStyle(
+                            padding: const WidgetStatePropertyAll(
+                              EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            backgroundColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
+                              if (states.contains(WidgetState.selected)) {
+                                return primaryBlue; // Seçiliyse mavi
+                              }
+                              return isDark
+                                  ? const Color(0xFF374151)
+                                  : Colors.transparent;
+                            }),
+                            foregroundColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
+                              if (states.contains(WidgetState.selected)) {
+                                return Colors.white; // Seçili yazı beyaz
+                              }
+                              return isDark ? Colors.white : Colors.black54;
+                            }),
+                            side: WidgetStateProperty.all(
+                              BorderSide(
+                                color: isDark
+                                    ? Colors.transparent
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const Gap(30),
+                      // --- Kendi Notların ---
+                      Text(
+                        "Kendi Notların/Açıklama",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const Gap(12),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1F2937)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.transparent
+                                : Colors.grey.shade200,
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: TextField(
+                          controller: aciklamaController,
+                          maxLines: 4,
+                          minLines: 2,
+                          style: GoogleFonts.inter(fontSize: 14),
+                          decoration: InputDecoration.collapsed(
+                            hintText:
+                                "Sorunun çözümüne dair kendi notlarını buraya yaz...",
+                            hintStyle: TextStyle(color: Colors.grey.shade500),
+                          ),
+                        ),
+                      ),
+                      const Gap(16),
+
+                      // --- Açıklamayı Güncelle Butonu ---
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            _updateAciklama(
+                              ref,
+                              soru.id!,
+                              aciklamaController.text,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Açıklama başarıyla güncellendi.",
+                                ),
                               ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryBlue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          icon: const Icon(Icons.edit, size: 18),
-                          label: const Text(
-                            "Soruyu Çöz",
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ),
-                      const Gap(12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _selectDate(context, ref, soru.id!),
-                          style: ElevatedButton.styleFrom(
                             backgroundColor: isDark
-                                ? const Color(0xFF374151)
-                                : Colors.white,
+                                ? Colors.blue.shade900
+                                : lightBlueBg,
                             foregroundColor: isDark
                                 ? Colors.white
-                                : Colors.black87,
+                                : primaryBlue,
+                            elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: isDark
-                                  ? BorderSide.none
-                                  : BorderSide(color: Colors.grey.shade300),
                             ),
-                            elevation: 0,
                           ),
-                          icon: const Icon(Icons.calendar_month, size: 18),
-                          label: const Text(
-                            "Tarih Ayarla",
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Platform.isIOS
+                                    ? CupertinoIcons.refresh
+                                    : Icons.refresh_rounded,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Açıklamayı Güncelle",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
                         ),
                       ),
+                      const Gap(40),
                     ],
                   ),
-
-                  const Gap(30),
-                  // --- Cevabınız Kısmı (Orijinal Mantık Korundu) ---
-                  Text(
-                    "Cevabınız",
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const Gap(12),
-                  // DÜZELTME: Senin yazdığın SegmentedButton mantığı burada aynen duruyor.
-                  // Sadece 'style' kısmını görsele benzetmek için güncelledim.
-                  SizedBox(
-                    width: double.infinity,
-
-                    child: SegmentedButton<OptionSoruCevabi>(
-                      emptySelectionAllowed: true,
-                      segments: OptionSoruCevabi.values.map((e) {
-                        return ButtonSegment<OptionSoruCevabi>(
-                          value: e,
-                          label: Text(
-                            e.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        );
-                      }).toList(),
-                      selected: {
-                        ref.watch(soruCevabiProvider),
-                      }.whereType<OptionSoruCevabi>().toSet(),
-                      onSelectionChanged: (newSelection) {
-                        // --- BURASI SENİN ORİJİNAL KODUN ---
-                        // Kullanıcı seçim yaptığında çalışacak, doğru/yanlış kontrolü yapacak.
-                        final selectedCevap = newSelection.first;
-
-                        if (ref.read(soruCevabiProvider) == null) {
-                          ref.read(soruCevabiProvider.notifier).state =
-                              selectedCevap;
-
-                          // --- DURUM GÜNCELLEME MANTIĞI ---
-                          if (soru.soruCevap == selectedCevap.name) {
-                            // DOĞRU CEVAP
-                            _updateSoruDurum(ref, soru.id!, 'Öğrenildi', '');
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Doğru cevap! Soru durumu 'Öğrenildi' olarak güncellendi.",
-                                ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          } else {
-                            // YANLIŞ CEVAP
-                            final hataNedeni =
-                                "Seçim: ${selectedCevap.name}, Doğru: ${soru.soruCevap}";
-                            _updateSoruDurum(
-                              ref,
-                              soru.id!,
-                              'Öğrenilecek',
-                              hataNedeni,
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  "Yanlış cevap! Doğru cevap: ${soru.soruCevap}. Durum 'Öğrenilecek' olarak güncellendi.",
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      // Tasarım iyileştirmeleri (Mantığı etkilemez)
-                      showSelectedIcon: false,
-                      style: ButtonStyle(
-                        padding: const WidgetStatePropertyAll(
-                          EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        backgroundColor: WidgetStateProperty.resolveWith((
-                          states,
-                        ) {
-                          if (states.contains(WidgetState.selected)) {
-                            return primaryBlue; // Seçiliyse mavi
-                          }
-                          return isDark
-                              ? const Color(0xFF374151)
-                              : Colors.transparent;
-                        }),
-                        foregroundColor: WidgetStateProperty.resolveWith((
-                          states,
-                        ) {
-                          if (states.contains(WidgetState.selected)) {
-                            return Colors.white; // Seçili yazı beyaz
-                          }
-                          return isDark ? Colors.white : Colors.black54;
-                        }),
-                        side: WidgetStateProperty.all(
-                          BorderSide(
-                            color: isDark
-                                ? Colors.transparent
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const Gap(30),
-                  // --- Kendi Notların ---
-                  Text(
-                    "Kendi Notların/Açıklama",
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const Gap(12),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1F2937) : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.transparent
-                            : Colors.grey.shade200,
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    child: TextField(
-                      controller: aciklamaController,
-                      maxLines: 4,
-                      minLines: 2,
-                      style: GoogleFonts.inter(fontSize: 14),
-                      decoration: InputDecoration.collapsed(
-                        hintText:
-                            "Sorunun çözümüne dair kendi notlarını buraya yaz...",
-                        hintStyle: TextStyle(color: Colors.grey.shade500),
-                      ),
-                    ),
-                  ),
-                  const Gap(16),
-
-                  // --- Açıklamayı Güncelle Butonu ---
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        _updateAciklama(ref, soru.id!, aciklamaController.text);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Açıklama başarıyla güncellendi."),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? Colors.blue.shade900
-                            : lightBlueBg,
-                        foregroundColor: isDark ? Colors.white : primaryBlue,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.refresh_rounded, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            "Açıklamayı Güncelle",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Gap(40),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

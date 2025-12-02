@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // ConsumerWidget ve WidgetRef için eklendi
@@ -19,45 +22,47 @@ class AnalizPage extends ConsumerWidget {
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
-      body: SingleChildScrollView(
-        // Ekranın kaydırılabilir olması için
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Eğer bu bölümü kullanmak isterseniz: _buildUserInfoSection(context),
-              const SizedBox(height: 20),
-              _buildGraphCard(
-                context: context,
-                ref: ref, // ref'i alt metoda iletiyoruz
-                title: 'Ders Çalışma Süresi',
-                highest: '**',
-                average: '**',
-                saatNet: 'Saat',
-                kayitVeri: "1",
-              ),
-              /*const SizedBox(height: 20),
-              _buildGraphCard(
-                context: context,
-                ref: ref,
-                title: 'TYT',
-                highest: '**',
-                average: '**',
-                saatNet: 'Net',
-                kayitVeri: "2",
-              ),
-              const SizedBox(height: 20),
-              _buildGraphCard(
-                context: context,
-                ref: ref,
-                title: 'AYT',
-                highest: '**',
-                average: '**',
-                saatNet: 'Net',
-                kayitVeri: "3",
-              ), // AYT bölümü*/
-            ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          // Ekranın kaydırılabilir olması için
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Eğer bu bölümü kullanmak isterseniz: _buildUserInfoSection(context),
+                const SizedBox(height: 20),
+                _buildGraphCard(
+                  context: context,
+                  ref: ref, // ref'i alt metoda iletiyoruz
+                  title: 'Ders Çalışma Süresi',
+                  highest: '**',
+                  average: '**',
+                  saatNet: 'Saat',
+                  kayitVeri: "1",
+                ),
+                /*const SizedBox(height: 20),
+                _buildGraphCard(
+                  context: context,
+                  ref: ref,
+                  title: 'TYT',
+                  highest: '**',
+                  average: '**',
+                  saatNet: 'Net',
+                  kayitVeri: "2",
+                ),
+                const SizedBox(height: 20),
+                _buildGraphCard(
+                  context: context,
+                  ref: ref,
+                  title: 'AYT',
+                  highest: '**',
+                  average: '**',
+                  saatNet: 'Net',
+                  kayitVeri: "3",
+                ), // AYT bölümü*/
+              ],
+            ),
           ),
         ),
       ),
@@ -103,25 +108,14 @@ class AnalizPage extends ConsumerWidget {
                       pathParameters: {"id": kayitVeri},
                     );
                   },
-                  icon: const Icon(Icons.add),
+                  icon: Icon(
+                    Platform.isIOS ? CupertinoIcons.add : Icons.add,
+                    color: Colors.black,
+                  ),
                   color: Colors.black,
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            /*Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'En Yüksek: $highest $saatNet', // 'saat' veya 'Net' olarak değiştirilebilir
-                  style: const TextStyle(fontSize: 14),
-                ),
-                Text(
-                  'Ortalama: $average $saatNet',
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
-            ),*/
             const SizedBox(height: 10),
             // Buraya grafik widget'ı gelecek
             _buildGraphWidget(
@@ -135,11 +129,7 @@ class AnalizPage extends ConsumerWidget {
     );
   }
 
-  // Grafik widget'ı - context ve ref'i kabul eder
   Widget _buildGraphWidget(BuildContext context, WidgetRef ref, String id) {
-    // Not: Buradan 'id' kullanarak ilgili Riverpod provider'ını dinleyebilirsiniz:
-    // final graphData = ref.watch(analizDataProvider(id));
-
     final asyncData = ref.watch(analysisProvider);
 
     return asyncData.when(
@@ -150,7 +140,10 @@ class AnalizPage extends ConsumerWidget {
             child: Text(
               'Henüz veri kaydı yok. Lütfen bir kayıt ekleyin.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.black54),
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.black54,
+              ),
             ),
           );
         }
@@ -230,7 +223,11 @@ class AnalizPage extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => Center(
+        child: Platform.isIOS
+            ? const CupertinoActivityIndicator()
+            : const CircularProgressIndicator(),
+      ),
       error: (err, stack) => Center(child: Text('Hata: $err')),
     );
   }

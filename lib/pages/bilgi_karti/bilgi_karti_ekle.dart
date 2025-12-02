@@ -1,6 +1,7 @@
 // lib/pages/bilgi_notu_ekle/bilgi_notu_ekle.dart
 
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,49 +44,121 @@ class _BilgiNotuEklePageState extends ConsumerState<BilgiNotuEklePage> {
 
   // --- İŞLEVSEL FONKSİYONLAR ---
 
+  // --- PLATFORMA DUYARLI RESİM SEÇİCİ ---
   Future<void> _showImageSourceDialog() async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
+    if (Platform.isIOS) {
+      // iOS İÇİN: ActionSheet (Alttan Kayan Menü)
+      await showCupertinoModalPopup(
+        context: context,
+        builder: (context) => CupertinoActionSheet(
           title: const Text('Resim Kaynağını Seçin'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Galeriden Seç'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  ref.read(imagePickerProvider.notifier).pickImageFromGallery();
-                },
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(imagePickerProvider.notifier).pickImageFromGallery();
+              },
+              child: const Text('Galeriden Seç'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(imagePickerProvider.notifier).pickImageFromCamera();
+              },
+              child: const Text('Kameradan Çek'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+        ),
+      );
+    } else {
+      // ANDROID İÇİN: AlertDialog (Ortada Çıkan Menü)
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Resim Kaynağını Seçin'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Galeriden Seç'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    ref
+                        .read(imagePickerProvider.notifier)
+                        .pickImageFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Kameradan Çek'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    ref
+                        .read(imagePickerProvider.notifier)
+                        .pickImageFromCamera();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  // --- PLATFORMA DUYARLI TARİH SEÇİCİ ---
+  Future<void> _selectDate(BuildContext context) async {
+    if (Platform.isIOS) {
+      // iOS İÇİN: CupertinoDatePicker
+      showCupertinoModalPopup(
+        context: context,
+        builder: (_) => Container(
+          height: 250,
+          color: const Color.fromARGB(255, 255, 255, 255),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 180,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: _selectedDate,
+                  minimumDate: DateTime.now().subtract(const Duration(days: 1)),
+                  maximumDate: DateTime(2030),
+                  onDateTimeChanged: (val) {
+                    setState(() {
+                      _selectedDate = val;
+                    });
+                  },
+                ),
               ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Kameradan Çek'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  ref.read(imagePickerProvider.notifier).pickImageFromCamera();
-                },
+              CupertinoButton(
+                child: const Text('Tamam'),
+                onPressed: () => Navigator.of(context).pop(),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
+        ),
+      );
+    } else {
+      // ANDROID İÇİN: Material DatePicker
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: _selectedDate,
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2030),
+      );
+      if (picked != null && picked != _selectedDate) {
+        setState(() {
+          _selectedDate = picked;
+        });
+      }
     }
   }
 
@@ -165,6 +238,12 @@ class _BilgiNotuEklePageState extends ConsumerState<BilgiNotuEklePage> {
               AndroidFlutterLocalNotificationsPlugin
             >()
             ?.requestExactAlarmsPermission();
+      } else if (Platform.isIOS) {
+        await fln
+            .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin
+            >()
+            ?.requestPermissions(alert: true, badge: true, sound: true);
       }
     } catch (e) {
       debugPrint("Hata oluştu: $e");
@@ -259,294 +338,341 @@ class _BilgiNotuEklePageState extends ConsumerState<BilgiNotuEklePage> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- RESİM EKLEME ALANI ---
-              GestureDetector(
-                onTap: _showImageSourceDialog,
-                child: Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: cardColor.withValues(alpha: isDark ? 0.5 : 1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: dashedBorderColor,
-                      width: 2,
-                      // Düz çizgi (dotted border paketi olmadığı için)
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- RESİM EKLEME ALANI ---
+                  GestureDetector(
+                    onTap: _showImageSourceDialog,
+                    child: Container(
+                      height: 180,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: cardColor.withValues(alpha: isDark ? 0.5 : 1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: dashedBorderColor,
+                          width: 2,
+                          // Düz çizgi (dotted border paketi olmadığı için)
+                        ),
+                      ),
+                      child: selectedImage != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(18),
+                              child: Image.file(
+                                selectedImage,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.camera_alt_rounded,
+                                  size: 40,
+                                  color: primaryBlue,
+                                ),
+                                const Gap(10),
+                                Text(
+                                  "Bilgi Notu Fotoğrafı Ekle",
+                                  style: TextStyle(
+                                    color: primaryBlue,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
-                  child: selectedImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Image.file(selectedImage, fit: BoxFit.cover),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                  const Gap(24),
+
+                  // --- DERS VE KONU DROPDOWNLARI ---
+                  Row(
+                    children: [
+                      // Ders Dropdown
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.camera_alt_rounded,
-                              size: 40,
-                              color: primaryBlue,
-                            ),
-                            const Gap(10),
                             Text(
-                              "Bilgi Notu Fotoğrafı Ekle",
+                              "Ders",
                               style: TextStyle(
-                                color: primaryBlue,
-                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                                fontWeight: FontWeight.bold,
                               ),
+                            ),
+                            const Gap(8),
+                            _buildDropdown(
+                              value: secilenDers,
+                              items: dersler, // listeler.dart'taki liste
+                              hint: "Seçiniz",
+                              cardColor: cardColor,
+                              textColor: textColor,
+                              onChanged: (val) {
+                                ref
+                                        .read(
+                                          selectedBilgiDersProvider.notifier,
+                                        )
+                                        .state =
+                                    val;
+                                ref
+                                        .read(
+                                          selectedBilgiKonuProvider.notifier,
+                                        )
+                                        .state =
+                                    null; // Ders değişince konuyu sıfırla
+                              },
                             ),
                           ],
                         ),
-                ),
-              ),
-              const Gap(24),
-
-              // --- DERS VE KONU DROPDOWNLARI ---
-              Row(
-                children: [
-                  // Ders Dropdown
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Ders",
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Gap(8),
-                        _buildDropdown(
-                          value: secilenDers,
-                          items: dersler, // listeler.dart'taki liste
-                          hint: "Seçiniz",
-                          cardColor: cardColor,
-                          textColor: textColor,
-                          onChanged: (val) {
-                            ref.read(selectedBilgiDersProvider.notifier).state =
-                                val;
-                            ref.read(selectedBilgiKonuProvider.notifier).state =
-                                null; // Ders değişince konuyu sıfırla
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Gap(16),
-                  // Konu Dropdown
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Konu",
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Gap(8),
-                        _buildDropdown(
-                          value: secilenKonu,
-                          items:
-                              currentKonuListesi, // Seçili derse göre filtrelenmiş liste
-                          hint: "Seçiniz",
-                          cardColor: cardColor,
-                          textColor: textColor,
-                          onChanged: (val) =>
-                              ref
-                                      .read(selectedBilgiKonuProvider.notifier)
-                                      .state =
-                                  val,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(24),
-
-              // --- ÖNEM DÜZEYİ BUTONLARI ---
-              Text(
-                "Önem Düzeyi",
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-              ),
-              const Gap(12),
-              Row(
-                children: List.generate(3, (index) {
-                  final isSelected = secilenOnem == index;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(right: index == 2 ? 0 : 12.0),
-                      child: InkWell(
-                        onTap: () {
-                          ref.read(selectedBilgiOnemProvider.notifier).state =
-                              index;
-                        },
-                        borderRadius: BorderRadius.circular(30),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? priorityColors[index]
-                                : cardColor,
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: isSelected
-                                  ? Colors.transparent
-                                  : (isDark
-                                        ? Colors.transparent
-                                        : Colors.grey.shade300),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                priorityIcons[index],
-                                size: 18,
-                                color: isSelected
-                                    ? Colors.white
-                                    : priorityColors[index],
-                              ),
-                              const Gap(8),
-                              Text(
-                                priorityLabels[index],
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : textColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-              const Gap(24),
-
-              // --- AÇIKLAMA ---
-              Text(
-                "Bilgi Notu Açıklaması",
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-              ),
-              const Gap(12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? Colors.transparent : Colors.grey.shade300,
-                  ),
-                ),
-                child: TextField(
-                  controller: _descriptionController,
-                  maxLines: 5,
-                  minLines: 3,
-                  style: TextStyle(color: textColor),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: "Önemli detayları buraya yaz...",
-                    hintStyle: TextStyle(color: subTextColor),
-                  ),
-                ),
-              ),
-              const Gap(24),
-
-              // --- TARİH ---
-              Text(
-                "Hatırlatıcı Tarihi Seç",
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-              ),
-              const Gap(12),
-              GestureDetector(
-                onTap: () => _selectDate(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? Colors.transparent : Colors.grey.shade300,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_month_rounded, color: primaryBlue),
-                      const Gap(12),
+                      const Gap(16),
+                      // Konu Dropdown
                       Expanded(
-                        child: Text(
-                          _getFormattedDate(_selectedDate),
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Konu",
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Gap(8),
+                            _buildDropdown(
+                              value: secilenKonu,
+                              items:
+                                  currentKonuListesi, // Seçili derse göre filtrelenmiş liste
+                              hint: "Seçiniz",
+                              cardColor: cardColor,
+                              textColor: textColor,
+                              onChanged: (val) =>
+                                  ref
+                                          .read(
+                                            selectedBilgiKonuProvider.notifier,
+                                          )
+                                          .state =
+                                      val,
+                            ),
+                          ],
                         ),
                       ),
-                      Icon(Icons.edit_calendar_rounded, color: subTextColor),
                     ],
                   ),
-                ),
-              ),
-              const Gap(30),
+                  const Gap(24),
 
-              // --- KAYDET BUTONU ---
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: kayitDurumu == SoruKayitState.loading
-                      ? null
-                      : _saveInfoNote,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBlue,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  icon: kayitDurumu == SoruKayitState.loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.save_rounded),
-                  label: Text(
-                    kayitDurumu == SoruKayitState.loading
-                        ? "Kaydediliyor..."
-                        : "Kaydet",
-                    style: const TextStyle(
-                      fontSize: 18,
+                  // --- ÖNEM DÜZEYİ BUTONLARI ---
+                  Text(
+                    "Önem Düzeyi",
+                    style: TextStyle(
+                      color: textColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
+                  const Gap(12),
+                  Row(
+                    children: List.generate(3, (index) {
+                      final isSelected = secilenOnem == index;
+                      return Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            right: index == 2 ? 0 : 12.0,
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              ref
+                                      .read(selectedBilgiOnemProvider.notifier)
+                                      .state =
+                                  index;
+                            },
+                            borderRadius: BorderRadius.circular(30),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? priorityColors[index]
+                                    : cardColor,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.transparent
+                                      : (isDark
+                                            ? Colors.transparent
+                                            : Colors.grey.shade300),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    priorityIcons[index],
+                                    size: 18,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : priorityColors[index],
+                                  ),
+                                  const Gap(8),
+                                  Text(
+                                    priorityLabels[index],
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : textColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const Gap(24),
+
+                  // --- AÇIKLAMA ---
+                  Text(
+                    "Bilgi Notu Açıklaması",
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Gap(12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.transparent
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _descriptionController,
+                      maxLines: 5,
+                      minLines: 3,
+                      style: TextStyle(color: textColor),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Önemli detayları buraya yaz...",
+                        hintStyle: TextStyle(color: subTextColor),
+                      ),
+                    ),
+                  ),
+                  const Gap(24),
+
+                  // --- TARİH ---
+                  Text(
+                    "Hatırlatıcı Tarihi Seç",
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Gap(12),
+                  GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.transparent
+                              : Colors.grey.shade300,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_month_rounded,
+                            color: primaryBlue,
+                          ),
+                          const Gap(12),
+                          Expanded(
+                            child: Text(
+                              _getFormattedDate(_selectedDate),
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.edit_calendar_rounded,
+                            color: subTextColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Gap(30),
+
+                  // --- KAYDET BUTONU ---
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: kayitDurumu == SoruKayitState.loading
+                          ? null
+                          : _saveInfoNote,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: kayitDurumu == SoruKayitState.loading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Platform.isIOS
+                                  ? const CupertinoActivityIndicator(
+                                      color: Colors.white,
+                                    )
+                                  : const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                            )
+                          : const Icon(Icons.save_rounded),
+                      label: Text(
+                        kayitDurumu == SoruKayitState.loading
+                            ? "Kaydediliyor..."
+                            : "Kaydet",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Gap(20),
+                ],
               ),
-              const Gap(20),
-            ],
+            ),
           ),
         ),
       ),

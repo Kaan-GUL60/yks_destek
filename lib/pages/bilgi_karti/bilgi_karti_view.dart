@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,12 +37,14 @@ class BilgiKartlariPage extends ConsumerWidget {
           }
         },
       ),
-      body: const Column(
-        children: [
-          _BilgiFilterControls(), // Filtre Alanı (Özelleştirilmiş)
-          SizedBox(height: 10),
-          Expanded(child: _BilgiNotlariListesi()), // Liste Alanı
-        ],
+      body: SafeArea(
+        child: const Column(
+          children: [
+            _BilgiFilterControls(), // Filtre Alanı (Özelleştirilmiş)
+            SizedBox(height: 10),
+            Expanded(child: _BilgiNotlariListesi()), // Liste Alanı
+          ],
+        ),
       ),
     );
   }
@@ -86,62 +89,218 @@ class _BilgiFilterControls extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  // key ekleyerek state değişiminde yenilenmesini sağlıyoruz
-                  key: ValueKey(filterState.ders ?? 'ders-reset'),
-                  initialValue: filterState.ders,
-                  hint: Text('Ders Seç', style: dropdownDecoration.hintStyle),
-                  isExpanded: true,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: isDarkMode ? Colors.white70 : Colors.grey,
-                  ),
-                  dropdownColor: isDarkMode
-                      ? const Color(0xFF1F2937)
-                      : Colors.white,
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: GoogleFonts.montserrat().fontFamily,
-                  ),
-                  decoration: dropdownDecoration,
-                  items: dersler.toSet().toList().map((ders) {
-                    return DropdownMenuItem(value: ders, child: Text(ders));
-                  }).toList(),
-                  onChanged: (value) => notifier.setDers(value),
-                ),
+                child: Platform.isIOS
+                    // --- iOS KISMI (YENİ EKLENDİ) ---
+                    ? GestureDetector(
+                        onTap: () {
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder: (context) => Container(
+                              height: 250,
+                              color: isDarkMode
+                                  ? const Color(0xFF1F2937)
+                                  : Colors.white,
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 180,
+                                    child: CupertinoPicker(
+                                      itemExtent: 32,
+                                      onSelectedItemChanged: (index) {
+                                        notifier.setDers(
+                                          dersler.toSet().toList()[index],
+                                        );
+                                      },
+                                      children: dersler
+                                          .toSet()
+                                          .toList()
+                                          .map((e) => Text(e))
+                                          .toList(),
+                                    ),
+                                  ),
+                                  CupertinoButton(
+                                    child: const Text("Tamam"),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? const Color(0xFF1F2937)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                filterState.ders ?? 'Ders Seç',
+                                style: dropdownDecoration.hintStyle?.copyWith(
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              ),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : Colors.grey,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    // --- ANDROID KISMI (AYNEN KORUNDU) ---
+                    : DropdownButtonFormField<String>(
+                        key: ValueKey(filterState.ders ?? 'ders-reset'),
+                        initialValue: filterState.ders,
+                        hint: Text(
+                          'Ders Seç',
+                          style: dropdownDecoration.hintStyle,
+                        ),
+                        isExpanded: true,
+                        icon: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: isDarkMode ? Colors.white70 : Colors.grey,
+                        ),
+                        dropdownColor: isDarkMode
+                            ? const Color(0xFF1F2937)
+                            : Colors.white,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: GoogleFonts.montserrat().fontFamily,
+                        ),
+                        decoration: dropdownDecoration,
+                        items: dersler.toSet().toList().map((ders) {
+                          return DropdownMenuItem(
+                            value: ders,
+                            child: Text(ders),
+                          );
+                        }).toList(),
+                        onChanged: (value) => notifier.setDers(value),
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  // key ekleyerek state değişiminde yenilenmesini sağlıyoruz
-                  key: ValueKey(filterState.konu ?? 'konu-reset'),
-                  initialValue: filterState.konu,
-                  hint: Text('Konu Seç', style: dropdownDecoration.hintStyle),
-                  isExpanded: true,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: isDarkMode ? Colors.white70 : Colors.grey,
-                  ),
-                  dropdownColor: isDarkMode
-                      ? const Color(0xFF1F2937)
-                      : Colors.white,
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: GoogleFonts.montserrat().fontFamily,
-                  ),
-                  decoration: dropdownDecoration,
-                  items: (filterState.ders != null)
-                      ? konular.toSet().toList().map((konu) {
-                          return DropdownMenuItem(
-                            value: konu,
-                            child: Text(konu),
+                child: Platform.isIOS
+                    // --- iOS KISMI (YENİ EKLENDİ) ---
+                    ? GestureDetector(
+                        onTap: () {
+                          if (filterState.ders == null) {
+                            return;
+                          } // Ders seçilmediyse açma
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder: (context) => Container(
+                              height: 250,
+                              color: isDarkMode
+                                  ? const Color(0xFF1F2937)
+                                  : Colors.white,
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 180,
+                                    child: CupertinoPicker(
+                                      itemExtent: 32,
+                                      onSelectedItemChanged: (index) {
+                                        notifier.setKonu(
+                                          konular.toSet().toList()[index],
+                                        );
+                                      },
+                                      children: konular
+                                          .toSet()
+                                          .toList()
+                                          .map((e) => Text(e))
+                                          .toList(),
+                                    ),
+                                  ),
+                                  CupertinoButton(
+                                    child: const Text("Tamam"),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            ),
                           );
-                        }).toList()
-                      : [],
-                  onChanged: (value) => notifier.setKonu(value),
-                ),
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? const Color(0xFF1F2937)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                // Taşmayı önlemek için
+                                child: Text(
+                                  filterState.konu ?? 'Konu Seç',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: dropdownDecoration.hintStyle?.copyWith(
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : Colors.grey,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    // --- ANDROID KISMI (AYNEN KORUNDU) ---
+                    : DropdownButtonFormField<String>(
+                        key: ValueKey(filterState.konu ?? 'konu-reset'),
+                        initialValue: filterState.konu,
+                        hint: Text(
+                          'Konu Seç',
+                          style: dropdownDecoration.hintStyle,
+                        ),
+                        isExpanded: true,
+                        icon: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: isDarkMode ? Colors.white70 : Colors.grey,
+                        ),
+                        dropdownColor: isDarkMode
+                            ? const Color(0xFF1F2937)
+                            : Colors.white,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: GoogleFonts.montserrat().fontFamily,
+                        ),
+                        decoration: dropdownDecoration,
+                        items: (filterState.ders != null)
+                            ? konular.toSet().toList().map((konu) {
+                                return DropdownMenuItem(
+                                  value: konu,
+                                  child: Text(konu),
+                                );
+                              }).toList()
+                            : [],
+                        onChanged: (value) => notifier.setKonu(value),
+                      ),
               ),
             ],
           ),
@@ -195,7 +354,11 @@ class _BilgiNotlariListesi extends ConsumerWidget {
     final filteredNotes = ref.watch(filteredBilgiNotlariProvider);
 
     return allNotesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => Center(
+        child: Platform.isIOS
+            ? const CupertinoActivityIndicator()
+            : const CircularProgressIndicator(),
+      ),
       error: (err, stack) => Center(child: Text('Hata: $err')),
       data: (_) {
         if (filteredNotes.isEmpty) {
@@ -209,6 +372,9 @@ class _BilgiNotlariListesi extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 80),
           itemCount: filteredNotes.length,
+          physics: Platform.isIOS
+              ? const BouncingScrollPhysics()
+              : const ClampingScrollPhysics(),
           itemBuilder: (context, index) {
             final not = filteredNotes[index];
             return _BilgiNotuCard(not: not);

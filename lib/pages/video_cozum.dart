@@ -1,4 +1,6 @@
 // publishing_house_list.dart
+import 'dart:io'; // Platform kontrolü
+import 'package:flutter/cupertino.dart'; // iOS widget'ları
 import 'package:flutter/material.dart';
 import 'package:kgsyks_destek/pages/webviewer_page.dart';
 
@@ -51,71 +53,100 @@ class YayinevleriListesi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tema değişkenleri
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor =
+        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('Yayinevleri'), // UI metni guncellendi
-        //backgroundColor: const Color(0xFF1E6C53),
+        title: Text(
+          'Yayınevleri',
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true, // İYİLEŞTİRME 1: Başlık ortalama (iOS standardı)
+        backgroundColor: bgColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textColor),
       ),
-      body: ListView.builder(
-        itemCount: yayinevleri.length,
-        itemBuilder: (context, index) {
-          final yayinevi = yayinevleri[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.2),
-                    spreadRadius: 2,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+      // İYİLEŞTİRME 2: SafeArea
+      body: SafeArea(
+        child: ListView.builder(
+          // İYİLEŞTİRME 3: iOS tarzı esneme efekti
+          physics: Platform.isIOS
+              ? const BouncingScrollPhysics()
+              : const ClampingScrollPhysics(),
+          itemCount: yayinevleri.length,
+          itemBuilder: (context, index) {
+            final yayinevi = yayinevleri[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
               ),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: _getAvatarColor(index),
-                  child: Text(
-                    yayinevi.ad[0],
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF1F2937)
+                      : Colors.white, // Koyu mod desteği
+                  borderRadius: BorderRadius.circular(12.0),
+                  boxShadow: isDark
+                      ? [] // Koyu modda gölge yok
+                      : [
+                          BoxShadow(
+                            color: Colors.grey.withValues(alpha: 0.2),
+                            spreadRadius: 2,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                  border: isDark ? Border.all(color: Colors.white12) : null,
+                ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: _getAvatarColor(index),
+                    child: Text(
+                      yayinevi.ad[0],
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    yayinevi.ad,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
-                title: Text(
-                  yayinevi.ad,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary,
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.w500,
+                  // İYİLEŞTİRME 4: Platforma Duyarlı Ok İkonu
+                  trailing: Icon(
+                    Platform.isIOS
+                        ? CupertinoIcons.chevron_forward
+                        : Icons.arrow_forward_ios,
+                    size: 18.0, // iOS okları genelde biraz daha küçüktür
+                    color: Colors.grey,
                   ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WebViewScreen(
+                          url: yayinevi.link,
+                          title: yayinevi.ad,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16.0,
-                  color: Colors.grey,
-                ),
-                // Navigator.push ile yeni sayfaya yonlendirme
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          WebViewScreen(url: yayinevi.link, title: yayinevi.ad),
-                    ),
-                  );
-                },
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

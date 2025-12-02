@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,12 +37,14 @@ class FavorilerPage extends ConsumerWidget {
           );
         },
       ),
-      body: const Column(
-        children: [
-          _FilterControls(), // Filtre Alanı
-          SizedBox(height: 10),
-          Expanded(child: _SorularListesi()), // Liste Alanı
-        ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            _FilterControls(), // Filtre Alanı
+            SizedBox(height: 10),
+            Expanded(child: _SorularListesi()), // Liste Alanı
+          ],
+        ),
       ),
     );
   }
@@ -85,61 +88,192 @@ class _FilterControls extends ConsumerWidget {
             children: [
               // Ders Dropdown
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: filterState['ders'],
-                  hint: Text('Ders Seç', style: dropdownDecoration.hintStyle),
-                  isExpanded: true,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: isDarkMode ? Colors.white70 : Colors.grey,
-                  ),
-                  dropdownColor: isDarkMode
-                      ? const Color(0xFF1F2937)
-                      : Colors.white,
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: GoogleFonts.montserrat().fontFamily,
-                  ),
-                  decoration: dropdownDecoration,
-                  // DUZELTME: .toSet().toList() ekledik. Aynı ders adı varsa temizler.
-                  items: dersler.toSet().toList().map((ders) {
-                    return DropdownMenuItem(value: ders, child: Text(ders));
-                  }).toList(),
-                  onChanged: (value) => notifier.setDers(value),
-                ),
+                child: Platform.isIOS
+                    // --- iOS KISMI (YENİ) ---
+                    ? GestureDetector(
+                        onTap: () {
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder: (context) => Container(
+                              height: 250,
+                              color: isDarkMode
+                                  ? const Color(0xFF1F2937)
+                                  : Colors.white,
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 180,
+                                    child: CupertinoPicker(
+                                      itemExtent: 32,
+                                      onSelectedItemChanged: (index) {
+                                        // toSet().toList() sırası korunur, güvenlidir
+                                        final ders = dersler
+                                            .toSet()
+                                            .toList()[index];
+                                        notifier.setDers(ders);
+                                      },
+                                      children: dersler
+                                          .toSet()
+                                          .toList()
+                                          .map((e) => Text(e))
+                                          .toList(),
+                                    ),
+                                  ),
+                                  CupertinoButton(
+                                    child: const Text("Tamam"),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? const Color(0xFF1F2937)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                filterState['ders'] ?? 'Ders Seç',
+                                style: dropdownDecoration.hintStyle?.copyWith(
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              ),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : Colors.grey,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    // --- ANDROID KISMI (ESKİ KODUNUZ) ---
+                    : DropdownButtonFormField<String>(
+                        initialValue: filterState['ders'],
+                        hint: Text(
+                          'Ders Seç',
+                          style: dropdownDecoration.hintStyle,
+                        ),
+                        isExpanded: true,
+                        // ... (Geri kalan Android kodunuz buraya) ...
+                        items: dersler.toSet().toList().map((ders) {
+                          return DropdownMenuItem(
+                            value: ders,
+                            child: Text(ders),
+                          );
+                        }).toList(),
+                        onChanged: (value) => notifier.setDers(value),
+                      ),
               ),
               const SizedBox(width: 16),
               // Konu Dropdown
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: filterState['konu'],
-                  hint: Text('Konu Seç', style: dropdownDecoration.hintStyle),
-                  isExpanded: true,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: isDarkMode ? Colors.white70 : Colors.grey,
-                  ),
-                  dropdownColor: isDarkMode
-                      ? const Color(0xFF1F2937)
-                      : Colors.white,
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: GoogleFonts.montserrat().fontFamily,
-                  ),
-                  decoration: dropdownDecoration,
-                  // DUZELTME: .toSet().toList() ekledik. "Hareket" gibi mükerrer kayıtları siler.
-                  items: (filterState['ders'] != null)
-                      ? konular.toSet().toList().map((konu) {
-                          return DropdownMenuItem(
-                            value: konu,
-                            child: Text(konu),
+                child: Platform.isIOS
+                    // --- iOS KISMI (YENİ) ---
+                    ? GestureDetector(
+                        onTap: () {
+                          if (filterState['ders'] == null) return;
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder: (context) => Container(
+                              height: 250,
+                              color: isDarkMode
+                                  ? const Color(0xFF1F2937)
+                                  : Colors.white,
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 180,
+                                    child: CupertinoPicker(
+                                      itemExtent: 32,
+                                      onSelectedItemChanged: (index) {
+                                        final konu = konular
+                                            .toSet()
+                                            .toList()[index];
+                                        notifier.setKonu(konu);
+                                      },
+                                      children: konular
+                                          .toSet()
+                                          .toList()
+                                          .map((e) => Text(e))
+                                          .toList(),
+                                    ),
+                                  ),
+                                  CupertinoButton(
+                                    child: const Text("Tamam"),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            ),
                           );
-                        }).toList()
-                      : [],
-                  onChanged: (value) => notifier.setKonu(value),
-                ),
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? const Color(0xFF1F2937)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  filterState['konu'] ?? 'Konu Seç',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: dropdownDecoration.hintStyle?.copyWith(
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : Colors.grey,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    // --- ANDROID KISMI (ESKİ KODUNUZ) ---
+                    : DropdownButtonFormField<String>(
+                        initialValue: filterState['konu'],
+                        hint: Text(
+                          'Konu Seç',
+                          style: dropdownDecoration.hintStyle,
+                        ),
+                        // ... (Geri kalan Android kodunuz buraya) ...
+                        items: (filterState['ders'] != null)
+                            ? konular.toSet().toList().map((konu) {
+                                return DropdownMenuItem(
+                                  value: konu,
+                                  child: Text(konu),
+                                );
+                              }).toList()
+                            : [],
+                        onChanged: (value) => notifier.setKonu(value),
+                      ),
               ),
             ],
           ),
@@ -148,6 +282,7 @@ class _FilterControls extends ConsumerWidget {
           // --- Durum Filtreleri ---
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            physics: Platform.isIOS ? const BouncingScrollPhysics() : null,
             child: Row(
               children: [
                 FilterButton(
@@ -194,7 +329,11 @@ class _SorularListesi extends ConsumerWidget {
     final filteredSorular = ref.watch(filteredSorularProvider);
 
     return allSorularAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => Center(
+        child: Platform.isIOS
+            ? const CupertinoActivityIndicator()
+            : const CircularProgressIndicator(),
+      ),
       error: (err, stack) => Center(child: Text('Hata: $err')),
       data: (_) {
         if (filteredSorular.isEmpty) {
@@ -208,6 +347,9 @@ class _SorularListesi extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 80),
           itemCount: filteredSorular.length,
+          physics: Platform.isIOS
+              ? const BouncingScrollPhysics()
+              : const ClampingScrollPhysics(),
           itemBuilder: (context, index) {
             final soru = filteredSorular[index];
             return _SoruCard(soru: soru);

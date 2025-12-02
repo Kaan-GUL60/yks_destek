@@ -1,10 +1,14 @@
 // ignore_for_file: unused_local_variable, avoid_print
 
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:gap/gap.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/sign/bilgi_database_helper.dart';
@@ -185,7 +189,13 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                       ),
 
                       _buildLabel("Sınıf Seçimi", textColor),
-                      _sinifSecim(),
+                      Platform.isIOS
+                          ? _buildIOSClassPicker(
+                              isDarkMode,
+                              textColor,
+                              selectedSinif,
+                            )
+                          : _sinifSecim(),
 
                       _buildLabel(
                         "Kullanıcı kodu(yoksa boş bırakın)",
@@ -324,13 +334,23 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                               borderRadius: BorderRadius.circular(50),
                             ),
                           ),
-                          child: const Text(
-                            "Kaydı Tamamla",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: Platform.isIOS
+                                      ? const CupertinoActivityIndicator()
+                                      : const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                )
+                              : const Text(
+                                  "Kaydı Tamamla",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
                       SizedBox(height: 50),
@@ -352,10 +372,119 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     );
   }
 
+  // --- iOS İÇİN ÖZEL SINIF SEÇİCİ WIDGET'I ---
+  Widget _buildIOSClassPicker(
+    bool isDark,
+    Color textColor,
+    String currentValue,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        showCupertinoModalPopup(
+          context: context,
+          builder: (_) => Container(
+            height: 250,
+            color: isDark ? const Color(0xFF1F2937) : Colors.white,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 180,
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    onSelectedItemChanged: (index) {
+                      // Mezun -> 13 dönüşümü gerekirse burada yapılır
+                      // Ama listeniz string olduğu için direkt atıyoruz
+                      ref.read(sinifProvider.notifier).state = dersler[index];
+                    },
+                    children: dersler.map((e) => Text(e)).toList(),
+                  ),
+                ),
+                CupertinoButton(
+                  child: const Text("Tamam"),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E252F) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: isDark ? null : Border.all(color: const Color(0xFFE0E0E0)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              currentValue,
+              style: TextStyle(color: textColor, fontSize: 16),
+            ),
+            Icon(
+              CupertinoIcons.chevron_down,
+              color: isDark ? Colors.grey : Colors.black54,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Expanded _alanSecim() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
-
+    if (Platform.isIOS) {
+      return Expanded(
+        child: CupertinoSlidingSegmentedControl<Option2>(
+          groupValue: ref.watch(sinavProvider2),
+          thumbColor: colorScheme.primary,
+          backgroundColor: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+          children: {
+            Option2.first: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                "SAY",
+                style: TextStyle(
+                  color: ref.watch(sinavProvider2) == Option2.first
+                      ? Colors.white
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ),
+            Option2.second: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                "EA",
+                style: TextStyle(
+                  color: ref.watch(sinavProvider2) == Option2.second
+                      ? Colors.white
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ),
+            Option2.third: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                "SÖZ",
+                style: TextStyle(
+                  color: ref.watch(sinavProvider2) == Option2.third
+                      ? Colors.white
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ),
+          },
+          onValueChanged: (Option2? newValue) {
+            if (newValue != null) {
+              ref.read(sinavProvider2.notifier).state = newValue;
+            }
+          },
+        ),
+      );
+    }
     // Resimdeki gibi seçili butonun arka planını hafifletmek için (opsiyonel)
     final selectedBackgroundColor = isDarkMode
         ? colorScheme.primary.withValues(
@@ -437,6 +566,84 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     // Tema renklerine erişim
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
+
+    // İYİLEŞTİRME 4: Platforma Duyarlı Sınav Seçimi
+    if (Platform.isIOS) {
+      return Row(
+        children: [
+          Expanded(
+            child: CupertinoSlidingSegmentedControl<Option>(
+              groupValue: selected,
+              thumbColor: colorScheme.primary,
+              backgroundColor: isDarkMode
+                  ? Colors.grey[800]!
+                  : Colors.grey[200]!,
+              children: {
+                Option.first: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.school_outlined,
+                        size: 18,
+                        color: selected == Option.first
+                            ? Colors.white
+                            : Colors.grey,
+                      ),
+                      const Gap(5),
+                      Text(
+                        label1,
+                        style: TextStyle(
+                          color: selected == Option.first
+                              ? Colors.white
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Option.second: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.assessment_outlined,
+                        size: 18,
+                        color: selected == Option.second
+                            ? Colors.white
+                            : Colors.grey,
+                      ),
+                      const Gap(5),
+                      Text(
+                        label2,
+                        style: TextStyle(
+                          color: selected == Option.second
+                              ? Colors.white
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              },
+              onValueChanged: (Option? newValue) {
+                if (newValue != null) {
+                  ref.read(sinavProvider.notifier).state = newValue;
+                }
+              },
+            ),
+          ),
+        ],
+      );
+    }
 
     // Seçili butonun arkaplanı için açık mavi tonu (Light mod) veya şeffaf mavi (Dark mod)
     final selectedBackgroundColor = isDarkMode

@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,7 +59,10 @@ class _BilgiKartiOgrenmePageState extends ConsumerState<BilgiKartiOgrenmePage> {
         actions: [
           // Tekrar Karıştır Butonu
           IconButton(
-            icon: Icon(Icons.shuffle, color: textColor),
+            icon: Icon(
+              Platform.isIOS ? CupertinoIcons.shuffle : Icons.shuffle,
+              color: textColor,
+            ),
             onPressed: () {
               ref.invalidate(shuffledBilgiNotlariProvider);
               setState(() => _currentIndex = 0);
@@ -67,7 +71,11 @@ class _BilgiKartiOgrenmePageState extends ConsumerState<BilgiKartiOgrenmePage> {
         ],
       ),
       body: shuffledListAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+          child: Platform.isIOS
+              ? const CupertinoActivityIndicator()
+              : const CircularProgressIndicator(),
+        ),
         error: (err, stack) => Center(child: Text('Hata: $err')),
         data: (notlar) {
           if (notlar.isEmpty) {
@@ -86,67 +94,70 @@ class _BilgiKartiOgrenmePageState extends ConsumerState<BilgiKartiOgrenmePage> {
             );
           }
 
-          return Column(
-            children: [
-              // Üst Kısım: İlerleme Göstergesi
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 24,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Kart ${_currentIndex + 1} / ${notlar.length}",
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: GoogleFonts.montserrat().fontFamily,
+          return SafeArea(
+            child: Column(
+              children: [
+                // Üst Kısım: İlerleme Göstergesi
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 24,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Kart ${_currentIndex + 1} / ${notlar.length}",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: GoogleFonts.montserrat().fontFamily,
+                        ),
                       ),
-                    ),
-                    SizedBox(
-                      width: 100,
-                      child: LinearProgressIndicator(
-                        value: (notlar.isNotEmpty)
-                            ? (_currentIndex + 1) / notlar.length
-                            : 0,
-                        backgroundColor: Colors.grey.shade300,
-                        color: const Color(0xFF0099FF),
-                        minHeight: 6,
-                        borderRadius: BorderRadius.circular(10),
+                      SizedBox(
+                        width: 100,
+                        child: LinearProgressIndicator(
+                          value: (notlar.isNotEmpty)
+                              ? (_currentIndex + 1) / notlar.length
+                              : 0,
+                          backgroundColor: Colors.grey.shade300,
+                          color: const Color(0xFF0099FF),
+                          minHeight: 6,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // Orta Kısım: Kart Alanı
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: notlar.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    // Animasyonlu geçiş için scale efekti (Opsiyonel ama şık durur)
-                    return AnimatedBuilder(
-                      animation: _pageController,
-                      builder: (context, child) {
-                        return _FlashCardItem(
-                          not: notlar[index],
-                          isDark: isDark,
-                        );
-                      },
-                    );
-                  },
+                // Orta Kısım: Kart Alanı
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: notlar.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      // Animasyonlu geçiş için scale efekti (Opsiyonel ama şık durur)
+                      return AnimatedBuilder(
+                        animation: _pageController,
+                        builder: (context, child) {
+                          return _FlashCardItem(
+                            not: notlar[index],
+                            isDark: isDark,
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 30), // Alt boşluk
-            ],
+                const SizedBox(height: 30), // Alt boşluk
+              ],
+            ),
           );
         },
       ),

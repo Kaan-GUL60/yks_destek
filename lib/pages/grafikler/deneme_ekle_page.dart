@@ -1,11 +1,12 @@
 // lib/pages/deneme_ekle/deneme_ekle_page.dart
 
+import 'dart:io'; // Platform kontrolü
+import 'package:flutter/cupertino.dart'; // iOS widget'ları
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart'; // Tarih formatı için
-import 'package:intl/date_symbol_data_local.dart'; // <-- BU SATIRI EKLE
-// Importları kendi proje yapına göre ayarla:
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_database_helper.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_model.dart';
 
@@ -21,6 +22,9 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
   DateTime _selectedDate = DateTime.now();
   final TextEditingController _denemeAdiController = TextEditingController();
 
+  // iOS Tab Kontrolü için (TYT/AYT Geçişi)
+  int _cupertinoTabIndex = 0;
+
   // --- TYT Controllerları ---
   final tytTurkceD = TextEditingController();
   final tytTurkceY = TextEditingController();
@@ -32,8 +36,7 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
   final tytFenY = TextEditingController();
 
   // --- AYT Controllerları ---
-  // Alan Seçimi: 0: Sayısal, 1: Eşit Ağırlık, 2: Sözel
-  Set<int> _selectedAlan = {0};
+  Set<int> _selectedAlan = {0}; // 0: Sayısal, 1: EA, 2: Sözel
 
   // Sayısal
   final aytMatD = TextEditingController();
@@ -59,7 +62,6 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
 
   @override
   void dispose() {
-    // Tüm controllerları dispose et
     _denemeAdiController.dispose();
     tytTurkceD.dispose();
     tytTurkceY.dispose();
@@ -93,26 +95,59 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
   @override
   void initState() {
     super.initState();
-    // Türkçe tarih formatını başlatıyoruz
     initializeDateFormatting('tr_TR', null);
   }
 
-  // Tarih Seçici
+  // --- PLATFORMA DUYARLI TARİH SEÇİCİ ---
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
+    DateTime? picked;
+
+    if (Platform.isIOS) {
+      // iOS: Alttan Kayan Tekerlek
+      await showCupertinoModalPopup(
+        context: context,
+        builder: (_) => Container(
+          height: 250,
+          color: const Color.fromARGB(255, 255, 255, 255),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 180,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: _selectedDate,
+                  minimumDate: DateTime(2020),
+                  maximumDate: DateTime(2030),
+                  onDateTimeChanged: (val) {
+                    setState(() {
+                      _selectedDate = val;
+                    });
+                  },
+                ),
+              ),
+              CupertinoButton(
+                child: const Text('Tamam'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Android: Takvim Popup
+      picked = await showDatePicker(
+        context: context,
+        initialDate: _selectedDate,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2030),
+      );
+      if (picked != null && picked != _selectedDate) {
+        setState(() {
+          _selectedDate = picked!;
+        });
+      }
     }
   }
-
-  // --- KAYDETME FONKSİYONLARI ---
 
   Future<void> _saveTYT() async {
     final deneme = TytDenemeModel(
@@ -153,7 +188,6 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
           : _denemeAdiController.text,
       tarih: _selectedDate,
       alan: alanKodu,
-      // Sayısal
       matD: int.tryParse(aytMatD.text) ?? 0,
       matY: int.tryParse(aytMatY.text) ?? 0,
       fizD: int.tryParse(aytFizD.text) ?? 0,
@@ -162,14 +196,12 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
       kimY: int.tryParse(aytKimY.text) ?? 0,
       biyD: int.tryParse(aytBiyD.text) ?? 0,
       biyY: int.tryParse(aytBiyY.text) ?? 0,
-      // EA/Sözel
       edbD: int.tryParse(aytEdbD.text) ?? 0,
       edbY: int.tryParse(aytEdbY.text) ?? 0,
       tarD: int.tryParse(aytTarD.text) ?? 0,
       tarY: int.tryParse(aytTarY.text) ?? 0,
       cogD: int.tryParse(aytCogD.text) ?? 0,
       cogY: int.tryParse(aytCogY.text) ?? 0,
-      // Sözel Ekstra
       felD: int.tryParse(aytFelD.text) ?? 0,
       felY: int.tryParse(aytFelY.text) ?? 0,
       dinD: int.tryParse(aytDinD.text) ?? 0,
@@ -195,44 +227,118 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final textColor = isDark ? Colors.white : Colors.black87;
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
+    // --- 1. iOS TASARIMI ---
+    if (Platform.isIOS) {
+      return CupertinoPageScaffold(
         backgroundColor: bgColor,
-        appBar: AppBar(
-          title: Text(
+        navigationBar: CupertinoNavigationBar(
+          middle: Text(
             "Deneme Ekle",
             style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
           ),
-          centerTitle: true,
-          elevation: 0,
           backgroundColor: bgColor,
-          foregroundColor: textColor,
-          bottom: TabBar(
-            dividerColor: Colors.transparent, // Çizgiyi şeffaf yapar
-            indicatorColor: primaryColor,
-            labelColor: primaryColor,
-            unselectedLabelColor: Colors.grey,
-            labelStyle: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
-            tabs: const [
-              Tab(text: "TYT Ekle"),
-              Tab(text: "AYT Ekle"),
+          border: null,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const Gap(10),
+              // iOS Tipi Tab Seçici (Segmented Control)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: CupertinoSlidingSegmentedControl<int>(
+                    groupValue: _cupertinoTabIndex,
+                    thumbColor: primaryColor,
+                    backgroundColor: isDark
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!,
+                    children: {
+                      0: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          "TYT Ekle",
+                          style: TextStyle(
+                            color: _cupertinoTabIndex == 0
+                                ? Colors.white
+                                : textColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      1: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          "AYT Ekle",
+                          style: TextStyle(
+                            color: _cupertinoTabIndex == 1
+                                ? Colors.white
+                                : textColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    },
+                    onValueChanged: (int? value) {
+                      if (value != null) {
+                        setState(() {
+                          _cupertinoTabIndex = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ),
+              const Gap(10),
+              Expanded(
+                child: _cupertinoTabIndex == 0
+                    ? _buildTytForm(textColor, primaryColor, isDark)
+                    : _buildAytForm(textColor, primaryColor, isDark),
+              ),
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            // --- TYT TAB ---
-            _buildTytForm(textColor, primaryColor, isDark),
-            // --- AYT TAB ---
-            _buildAytForm(textColor, primaryColor, isDark),
-          ],
+      );
+    }
+    // --- 2. ANDROID TASARIMI (Mevcut Kod) ---
+    else {
+      return DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          backgroundColor: bgColor,
+          appBar: AppBar(
+            title: Text(
+              "Deneme Ekle",
+              style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+            elevation: 0,
+            backgroundColor: bgColor,
+            foregroundColor: textColor,
+            bottom: TabBar(
+              dividerColor: Colors.transparent,
+              indicatorColor: primaryColor,
+              labelColor: primaryColor,
+              unselectedLabelColor: Colors.grey,
+              labelStyle: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
+              tabs: const [
+                Tab(text: "TYT Ekle"),
+                Tab(text: "AYT Ekle"),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            children: [
+              _buildTytForm(textColor, primaryColor, isDark),
+              _buildAytForm(textColor, primaryColor, isDark),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
-  // --- TYT FORM WIDGET ---
   Widget _buildTytForm(Color textColor, Color primaryColor, bool isDark) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -271,7 +377,6 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     );
   }
 
-  // --- AYT FORM WIDGET ---
   Widget _buildAytForm(Color textColor, Color primaryColor, bool isDark) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -280,60 +385,111 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
           _buildHeaderInput(isDark, textColor),
           const Gap(20),
 
-          // ALAN SEÇİMİ
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment<int>(value: 0, label: Text("Sayısal")),
-                ButtonSegment<int>(value: 1, label: Text("Eşit Ağırlık")),
-                ButtonSegment<int>(value: 2, label: Text("Sözel")),
-              ],
-              selected: _selectedAlan,
-              onSelectionChanged: (Set<int> newSelection) {
-                setState(() {
-                  _selectedAlan = newSelection;
-                });
-              },
-
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                  states,
-                ) {
-                  if (states.contains(WidgetState.selected)) {
-                    return primaryColor;
-                  }
-                  return isDark ? Colors.grey[800]! : Colors.grey[200]!;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith<Color>((
-                  states,
-                ) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Colors.white;
-                  }
-                  return isDark ? Colors.white : Colors.black;
-                }),
-              ),
-            ),
-          ),
+          // PLATFORMA DUYARLI ALAN SEÇİMİ
+          Platform.isIOS
+              ? SizedBox(
+                  width: double.infinity,
+                  child: CupertinoSlidingSegmentedControl<int>(
+                    groupValue: _selectedAlan.first,
+                    thumbColor: primaryColor,
+                    backgroundColor: isDark
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!,
+                    children: {
+                      0: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          "Sayısal",
+                          style: TextStyle(
+                            color: _selectedAlan.contains(0)
+                                ? Colors.white
+                                : textColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      1: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          "Eşit Ağırlık",
+                          style: TextStyle(
+                            color: _selectedAlan.contains(1)
+                                ? Colors.white
+                                : textColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      2: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          "Sözel",
+                          style: TextStyle(
+                            color: _selectedAlan.contains(2)
+                                ? Colors.white
+                                : textColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    },
+                    onValueChanged: (int? value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedAlan = {value};
+                        });
+                      }
+                    },
+                  ),
+                )
+              : SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment<int>(value: 0, label: Text("Sayısal")),
+                      ButtonSegment<int>(value: 1, label: Text("Eşit Ağırlık")),
+                      ButtonSegment<int>(value: 2, label: Text("Sözel")),
+                    ],
+                    selected: _selectedAlan,
+                    onSelectionChanged: (Set<int> newSelection) {
+                      setState(() {
+                        _selectedAlan = newSelection;
+                      });
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return primaryColor;
+                        }
+                        return isDark ? Colors.grey[800]! : Colors.grey[200]!;
+                      }),
+                      foregroundColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return isDark ? Colors.white : Colors.black;
+                      }),
+                    ),
+                  ),
+                ),
 
           const Gap(20),
 
-          // ALANA GÖRE DERSLER
           if (_selectedAlan.contains(0)) ...[
-            // SAYISAL
             _buildDersRow("Matematik", aytMatD, aytMatY, isDark),
             _buildDersRow("Fizik", aytFizD, aytFizY, isDark),
             _buildDersRow("Kimya", aytKimD, aytKimY, isDark),
             _buildDersRow("Biyoloji", aytBiyD, aytBiyY, isDark),
           ] else if (_selectedAlan.contains(1)) ...[
-            // EA
             _buildDersRow("Matematik", aytMatD, aytMatY, isDark),
             _buildDersRow("Edebiyat", aytEdbD, aytEdbY, isDark),
             _buildDersRow("Tarih", aytTarD, aytTarY, isDark),
             _buildDersRow("Coğrafya", aytCogD, aytCogY, isDark),
           ] else ...[
-            // SÖZEL
             _buildDersRow("Edebiyat", aytEdbD, aytEdbY, isDark),
             _buildDersRow("Tarih", aytTarD, aytTarY, isDark),
             _buildDersRow("Coğrafya", aytCogD, aytCogY, isDark),
@@ -368,9 +524,6 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     );
   }
 
-  // --- YARDIMCI WIDGETLAR ---
-
-  // Tarih ve Deneme Adı Girişi
   Widget _buildHeaderInput(bool isDark, Color textColor) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -394,7 +547,7 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
               hintText: "Deneme Adı (Örn: 3D TYT TG 1)",
               hintStyle: TextStyle(color: Colors.grey[500]),
               border: InputBorder.none,
-              icon: Icon(Icons.edit_note, color: Colors.blueAccent),
+              icon: const Icon(Icons.edit_note, color: Colors.blueAccent),
             ),
           ),
           const Divider(),
@@ -402,12 +555,16 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
             onTap: () => _selectDate(context),
             child: Row(
               children: [
-                const Icon(Icons.calendar_month, color: Colors.blueAccent),
+                // İKON DEĞİŞİMİ: Takvim
+                Icon(
+                  Platform.isIOS
+                      ? CupertinoIcons.calendar
+                      : Icons.calendar_month,
+                  color: Colors.blueAccent,
+                ),
                 const Gap(10),
                 Text(
-                  DateFormat('dd MMMM yyyy', 'tr_TR').format(
-                    _selectedDate,
-                  ), // intl paketi gerekir, yoksa toString kullanın
+                  DateFormat('dd MMMM yyyy', 'tr_TR').format(_selectedDate),
                   style: TextStyle(
                     color: textColor,
                     fontWeight: FontWeight.w600,
@@ -423,7 +580,6 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     );
   }
 
-  // Tekil Ders Satırı (Ders Adı | D | Y | Net)
   Widget _buildDersRow(
     String dersAdi,
     TextEditingController dogruCont,
@@ -442,7 +598,6 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
       ),
       child: Row(
         children: [
-          // Ders Adı
           Expanded(
             flex: 3,
             child: Text(
@@ -453,21 +608,15 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
               ),
             ),
           ),
-          // Doğru
           Expanded(
             flex: 2,
             child: _buildMiniInput(dogruCont, "D", Colors.green, isDark),
           ),
           const Gap(10),
-          // Yanlış
           Expanded(
             flex: 2,
             child: _buildMiniInput(yanlisCont, "Y", Colors.red, isDark),
           ),
-          const Gap(10),
-          // Net (Otomatik hesaplama için basit bir text, canlı hesaplama için setState gerekir
-          // ama karmaşıklığı artırmamak için statik bırakabilir veya dinleyici ekleyebiliriz.
-          // Şimdilik sadece inputları alıyoruz)
         ],
       ),
     );
