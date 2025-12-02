@@ -25,6 +25,7 @@ class _SignInState extends ConsumerState<SignIn> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
   bool _isSecure = true;
+  bool _isLoading = false;
 
   VoidCallback? get onPressed => null;
   void togglePasswordView() {
@@ -146,202 +147,225 @@ class _SignInState extends ConsumerState<SignIn> {
                 const SizedBox(height: 40),
                 Form(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel("E-posta Adresi", textColor),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autovalidateMode: AutovalidateMode.onUnfocus,
-                        autofillHints: [AutofillHints.email],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Lütfen e-posta adresinizi girin.';
-                          }
-                          // E-posta formatı için RegExp
-                          final emailRegex = RegExp(
-                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
-                          );
-                          if (!emailRegex.hasMatch(value)) {
-                            return 'Lütfen geçerli bir e-posta adresi girin.';
-                          }
-                          return null; // Her şey yolundaysa null döndür.
-                        },
-                        decoration: _inputStyle(
-                          hintText: "kullanici@eposta.com",
-                          isDarkMode: isDarkMode,
-                          prefixIcon: const Icon(
-                            Icons.email_outlined,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 15),
-                      _buildLabel("Şifre", textColor),
-                      TextFormField(
-                        keyboardType: TextInputType.visiblePassword,
-                        textInputAction: TextInputAction.done,
-                        controller: _passwordController,
-                        autovalidateMode: AutovalidateMode.onUnfocus,
-                        obscureText: _isSecure,
-                        validator: (value) {
-                          if ((value?.length ?? 0) < 6) {
-                            return 'Şifre en az 6 karakter olmalı.';
-                          }
-                          // E-posta formatı için RegExp
-                          return null; // Her şey yolundaysa null döndür.
-                        },
-                        decoration: _inputStyle(
-                          hintText: "Şifrenizi girin",
-                          isDarkMode: isDarkMode,
-                          prefixIcon: const Icon(
-                            Icons.lock_outline,
-                            color: Colors.grey,
-                          ),
-                          suffixIcon: _iconButton(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: FilledButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              // --- LOGIC KORUNDU ---
-                              try {
-                                final userCredential = await _auth
-                                    .signInWithEmailAndPassword(
-                                      email: _emailController.text.trim(),
-                                      password: _passwordController.text.trim(),
-                                    );
-
-                                final ctx = context;
-                                if (!ctx.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Hoşgeldiniz')),
-                                );
-
-                                final codeDoc = await _firestore
-                                    .collection("users")
-                                    .doc(userCredential.user!.uid)
-                                    .get();
-
-                                _userKayit(
-                                  codeDoc.data()?['userName'] ?? '',
-                                  codeDoc.data()?['sinav'] != null
-                                      ? Option.values[codeDoc.data()!['sinav']]
-                                      : Option.first,
-                                  codeDoc.data()?['sinif']?.toString() ?? '12',
-                                  codeDoc.data()?['alan'] != null
-                                      ? Option2.values[codeDoc.data()!['alan']]
-                                      : Option2.first,
-                                  codeDoc.data()?['isPro'] ?? false,
-                                );
-                                final storage = BooleanSettingStorage();
-
-                                // 2. Veritabanını başlat (Bu işlem asenkron olduğu için 'await' kullanıyoruz)
-                                await storage.initializeDatabase();
-
-                                // --- VERİ KAYDETME (Örneğin: true olarak kaydet) ---
-                                await storage.saveSetting(true);
-
-                                // --- VERİ OKUMA ---
-
-                                // İsteğe bağlı: İşiniz bitince veritabanını kapatabilirsiniz (genelde açık kalması sorun olmaz)
-                                await storage.closeDatabase();
-
-                                router.goNamed(AppRoute.anaekran.name);
-                              } on FirebaseAuthException catch (e) {
-                                String errorMessage = '';
-                                switch (e.code) {
-                                  case 'user-not-found':
-                                    errorMessage = 'Kullanıcı bulunamadı.';
-                                    break;
-                                  case 'wrong-password':
-                                    errorMessage = 'Yanlış şifre.';
-                                    break;
-                                  case 'invalid-email':
-                                    errorMessage = 'Geçersiz e-posta adresi.';
-                                    break;
-                                  case 'invalid-credential':
-                                    errorMessage = 'Geçersiz kimlik bilgileri';
-                                    break; // break eklendi
-                                  default:
-                                    errorMessage =
-                                        'Lütfen daha sonra tekrar deneyin.';
-                                }
-
-                                final ctx = context;
-                                if (ctx.mounted) {
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Giriş başarısız: $errorMessage',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Beklenmedik bir hata oluştu: $e',
-                                    ),
-                                  ),
-                                );
-                              }
-                              // --- LOGIC SONU ---
+                  child: AutofillGroup(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel("E-posta Adresi", textColor),
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autovalidateMode: AutovalidateMode.onUnfocus,
+                          autofillHints: const [AutofillHints.email],
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Lütfen e-posta adresinizi girin.';
                             }
+                            // E-posta formatı için RegExp
+                            final emailRegex = RegExp(
+                              r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                            );
+                            if (!emailRegex.hasMatch(value)) {
+                              return 'Lütfen geçerli bir e-posta adresi girin.';
+                            }
+                            return null; // Her şey yolundaysa null döndür.
                           },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                          ),
-                          child: const Text(
-                            "Giriş Yap",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                          decoration: _inputStyle(
+                            hintText: "kullanici@eposta.com",
+                            isDarkMode: isDarkMode,
+                            prefixIcon: const Icon(
+                              Icons.email_outlined,
+                              color: Colors.grey,
                             ),
                           ),
                         ),
-                      ),
+                        SizedBox(height: 15),
+                        _buildLabel("Şifre", textColor),
+                        TextFormField(
+                          keyboardType: TextInputType.visiblePassword,
+                          textInputAction: TextInputAction.done,
+                          controller: _passwordController,
+                          autovalidateMode: AutovalidateMode.onUnfocus,
+                          obscureText: _isSecure,
+                          autofillHints: const [AutofillHints.password],
+                          validator: (value) {
+                            if ((value?.length ?? 0) < 6) {
+                              return 'Şifre en az 6 karakter olmalı.';
+                            }
+                            // E-posta formatı için RegExp
+                            return null; // Her şey yolundaysa null döndür.
+                          },
+                          decoration: _inputStyle(
+                            hintText: "Şifrenizi girin",
+                            isDarkMode: isDarkMode,
+                            prefixIcon: const Icon(
+                              Icons.lock_outline,
+                              color: Colors.grey,
+                            ),
+                            suffixIcon: _iconButton(),
+                          ),
+                        ),
 
-                      const SizedBox(height: 24),
-                      Center(
-                        child: InkWell(
-                          onTap: () {
-                            router.goNamed(AppRoute.signUp.name);
-                          },
-                          child: RichText(
-                            text: TextSpan(
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? const Color(0xFF9EA6AD)
-                                    : const Color(0xFF7C828A),
+                        const SizedBox(height: 30),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () async {
+                                    if (_formKey.currentState!.validate()) {
+                                      // --- LOGIC KORUNDU ---
+                                      FocusScope.of(context).unfocus();
+                                      setState(() => _isLoading = true);
+                                      try {
+                                        final userCredential = await _auth
+                                            .signInWithEmailAndPassword(
+                                              email: _emailController.text
+                                                  .trim(),
+                                              password: _passwordController.text
+                                                  .trim(),
+                                            );
+                                        final storage = BooleanSettingStorage();
+                                        await storage.initializeDatabase();
+                                        // --- VERİ KAYDETME (Örneğin: true olarak kaydet) ---
+                                        await storage.saveSetting(true);
+
+                                        // --- VERİ OKUMA ---
+
+                                        // İsteğe bağlı: İşiniz bitince veritabanını kapatabilirsiniz (genelde açık kalması sorun olmaz)
+                                        await storage.closeDatabase();
+                                        final ctx = context;
+                                        if (!ctx.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Hoşgeldiniz'),
+                                          ),
+                                        );
+
+                                        final codeDoc = await _firestore
+                                            .collection("users")
+                                            .doc(userCredential.user!.uid)
+                                            .get();
+
+                                        _userKayit(
+                                          codeDoc.data()?['userName'] ?? '',
+                                          codeDoc.data()?['sinav'] != null
+                                              ? Option.values[codeDoc
+                                                    .data()!['sinav']]
+                                              : Option.first,
+                                          codeDoc
+                                                  .data()?['sinif']
+                                                  ?.toString() ??
+                                              '12',
+                                          codeDoc.data()?['alan'] != null
+                                              ? Option2.values[codeDoc
+                                                    .data()!['alan']]
+                                              : Option2.first,
+                                          codeDoc.data()?['isPro'] ?? false,
+                                        );
+
+                                        router.goNamed(AppRoute.anaekran.name);
+                                      } on FirebaseAuthException catch (e) {
+                                        String errorMessage = '';
+                                        switch (e.code) {
+                                          case 'user-not-found':
+                                            errorMessage =
+                                                'Kullanıcı bulunamadı.';
+                                            break;
+                                          case 'wrong-password':
+                                            errorMessage = 'Yanlış şifre.';
+                                            break;
+                                          case 'invalid-email':
+                                            errorMessage =
+                                                'Geçersiz e-posta adresi.';
+                                            break;
+                                          case 'invalid-credential':
+                                            errorMessage =
+                                                'Geçersiz kimlik bilgileri';
+                                            break; // break eklendi
+                                          default:
+                                            errorMessage =
+                                                'Lütfen daha sonra tekrar deneyin.';
+                                        }
+
+                                        final ctx = context;
+                                        if (ctx.mounted) {
+                                          ScaffoldMessenger.of(
+                                            ctx,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Giriş başarısız: $errorMessage',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Beklenmedik bir hata oluştu: $e',
+                                            ),
+                                          ),
+                                        );
+                                      } finally {
+                                        setState(() => _isLoading = false);
+                                      }
+                                      // --- LOGIC SONU ---
+                                    }
+                                  },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50),
                               ),
-                              children: [
-                                const TextSpan(text: "Hesabınız yok mu? "),
-                                TextSpan(
-                                  text: "Kayıt Olun",
-                                  style: TextStyle(
-                                    color: primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            ),
+                            child: const Text(
+                              "Giriş Yap",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 24),
+                        Center(
+                          child: InkWell(
+                            onTap: () {
+                              router.goNamed(AppRoute.signUp.name);
+                            },
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? const Color(0xFF9EA6AD)
+                                      : const Color(0xFF7C828A),
+                                ),
+                                children: [
+                                  const TextSpan(text: "Hesabınız yok mu? "),
+                                  TextSpan(
+                                    text: "Kayıt Olun",
+                                    style: TextStyle(
+                                      color: primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -369,6 +393,7 @@ class _SignInState extends ConsumerState<SignIn> {
     Option2 selectedSinav2,
     bool isPro,
   ) async {
+    if (_auth.currentUser == null) return;
     final yeniKullanici = KullaniciModel(
       uid: _auth.currentUser!.uid, // Genellikle Firebase Auth'dan alınır
       userName: userName,

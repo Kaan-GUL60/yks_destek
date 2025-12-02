@@ -148,7 +148,8 @@ class _SignUpState extends ConsumerState<SignUp> {
 
                 Form(
                   key: _formKey,
-                  child: Column(
+                  child: AutofillGroup(
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // --- EMAIL ALANI ---
@@ -158,6 +159,7 @@ class _SignUpState extends ConsumerState<SignUp> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         autovalidateMode: AutovalidateMode.onUnfocus,
+                        
                         autofillHints: const [AutofillHints.email],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -191,6 +193,7 @@ class _SignUpState extends ConsumerState<SignUp> {
                         controller: _passwordController,
                         autovalidateMode: AutovalidateMode.onUnfocus,
                         obscureText: _isSecure,
+                        autofillHints: const [AutofillHints.newPassword],
                         validator: (value) {
                           if ((value?.length ?? 0) < 6) {
                             return 'Şifre en az 6 karakter olmalı.';
@@ -301,7 +304,7 @@ class _SignUpState extends ConsumerState<SignUp> {
                         ),
                       ),
                     ],
-                  ),
+                  ),),
                 ),
               ],
             ),

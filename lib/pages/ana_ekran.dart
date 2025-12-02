@@ -212,7 +212,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
   Future<void> _logKaydiOlustur() async {
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      bool internetVar = !connectivityResult.contains(ConnectivityResult.none);
+      bool internetVar = connectivityResult.any(
+        (r) => r != ConnectivityResult.none,
+      );
 
       if (internetVar) {
         final user = FirebaseAuth.instance.currentUser;
@@ -312,262 +314,266 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
             _isTutorialChecked = true; // Bir daha bu blok çalışmasın
           }
           // -----------------------
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 10,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- İSTATİSTİK KARTLARI ---
-                  // --- 1. İSTATİSTİK KARTLARI ---
-                  // Key'i buradaki IntrinsicHeight'a veriyoruz ki tüm satırı vurgulasın
-                  IntrinsicHeight(
-                    key: _keyStatsRow, // <--- KEY EKLENDİ
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            context,
-                            title: "Çözülen",
-                            count: stats.cozulenSoru.toString(),
-                            icon: Icons.check_circle_outline,
-                            baseColor: Colors.green,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                        const Gap(10),
-                        Expanded(
-                          child: _buildStatCard(
-                            context,
-                            title: "Bekleyen",
-                            count: stats.bekleyenSoru.toString(),
-                            icon: Icons.timer_outlined,
-                            baseColor: Colors.orange,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                        const Gap(10),
-                        Expanded(
-                          child: _buildStatCard(
-                            context,
-                            title: "Yanlış",
-                            count: stats.yanlisSoru.toString(),
-                            icon: Icons.cancel_outlined,
-                            baseColor: Colors.red,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                        const Gap(10),
-                        Expanded(
-                          child: _buildStatCard(
-                            context,
-                            title: "Notlar",
-                            count: stats.notSayisi.toString(),
-                            icon: Icons.description_outlined,
-                            baseColor: Colors.yellow[700]!,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Gap(25),
-                  Text(
-                    "Sınav İstatistikleri",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: mainTextColor,
-                      fontFamily: GoogleFonts.montserrat().fontFamily,
-                    ),
-                  ),
-                  const Gap(15),
-
-                  // --- 2. HEDEFLER (MAX TYT/AYT) ---
-                  IntrinsicHeight(
-                    key: _keyTytRow, // <--- KEY EKLENDİ
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _buildGoalCard(
-                            context,
-                            label: "En Yüksek TYT",
-                            value: stats.maxTytNet.toStringAsFixed(1),
-                            baseColor: Colors.blue,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                        const Gap(15),
-                        Expanded(
-                          child: _buildGoalCard(
-                            context,
-                            label: "En Yüksek AYT",
-                            value: stats.maxAytNet.toStringAsFixed(1),
-                            baseColor: Colors.deepPurple,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Gap(15),
-                  // --- 3. ORTALAMALAR (SON 3) ---
-                  IntrinsicHeight(
-                    key: _keyAytRow, // <--- KEY EKLENDİ
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _buildGoalCard(
-                            context,
-                            label: "Son 3 TYT Ort.",
-                            value: stats.son3TytOrt.toStringAsFixed(1),
-                            baseColor: Colors.green,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                        const Gap(15),
-                        Expanded(
-                          child: _buildGoalCard(
-                            context,
-                            label: "Son 3 AYT Ort.",
-                            value: stats.son3AytOrt.toStringAsFixed(1),
-                            baseColor: Colors.orange[800]!,
-                            isDarkMode: isDarkMode,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Gap(30),
-
-                  // --- 4. AKSİYON BUTONLARI ---
-                  // Keyler _buildActionCard içine parametre olarak zaten gönderiliyor.
-                  // --- 4. AKSİYON BUTONLARI KISMI ---
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // SORU EKLE BUTONU
-                        Expanded(
-                          child: _buildActionCard(
-                            context,
-                            key: _keySoruEkle, // <--- BURASI TAMAM
-                            label: "Soru Ekle",
-                            icon: Icons.add_circle,
-                            baseColor: Colors.blue,
-                            isDarkMode: isDarkMode,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SoruEkle(),
-                              ),
-                            ).then((_) => ref.invalidate(dashboardProvider)),
-                          ),
-                        ),
-                        const Gap(15),
-
-                        // DENEME EKLE BUTONU
-                        Expanded(
-                          child: _buildActionCard(
-                            context,
-                            key: _keyDenemeEkle, // <--- BURASI EKLİ OLMALI
-                            label: "Deneme Ekle",
-                            icon: Icons.note_add,
-                            baseColor: Colors.purpleAccent,
-                            isDarkMode: isDarkMode,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const DenemeEklePage(),
-                              ),
-                            ).then((_) => ref.invalidate(dashboardProvider)),
-                          ),
-                        ),
-                        const Gap(15),
-
-                        // NOT EKLE BUTONU
-                        Expanded(
-                          child: _buildActionCard(
-                            context,
-                            key: _keyNotEkle, // <--- BURASI EKLİ OLMALI
-                            label: "Not Ekle",
-                            icon: Icons.post_add,
-                            baseColor: Colors.amber[700]!,
-                            isDarkMode: isDarkMode,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const BilgiNotuEklePage(),
-                              ),
-                            ).then((_) => ref.invalidate(dashboardProvider)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Gap(25),
-
-                  // --- 5. ANALİZ BUTONU ---
-                  GestureDetector(
-                    key: _keyAnaliz, // <--- KEY MEVCUT VE DOĞRU YERDE
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DenemeAnalizPage(),
-                      ),
-                    ),
-                    child: Container(
-                      width: double.infinity,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? const Color(0xFF2E5C46)
-                            : const Color(0xFFE0F2E9),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+          return SafeArea(
+            top: false, // AppBar olduğu için üst güvenli alana gerek yok
+            bottom: true, // Alt kısım önemli
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 10,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- İSTATİSTİK KARTLARI ---
+                    // --- 1. İSTATİSTİK KARTLARI ---
+                    // Key'i buradaki IntrinsicHeight'a veriyoruz ki tüm satırı vurgulasın
+                    IntrinsicHeight(
+                      key: _keyStatsRow, // <--- KEY EKLENDİ
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? Colors.green[800]
-                                  : Colors.green[200],
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.bar_chart,
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : Colors.green[800],
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              title: "Çözülen",
+                              count: stats.cozulenSoru.toString(),
+                              icon: Icons.check_circle_outline,
+                              baseColor: Colors.green,
+                              isDarkMode: isDarkMode,
                             ),
                           ),
                           const Gap(10),
-                          Text(
-                            "İstatistikleri Gör",
-                            style: TextStyle(
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : Colors.green[800],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              title: "Bekleyen",
+                              count: stats.bekleyenSoru.toString(),
+                              icon: Icons.timer_outlined,
+                              baseColor: Colors.orange,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ),
+                          const Gap(10),
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              title: "Yanlış",
+                              count: stats.yanlisSoru.toString(),
+                              icon: Icons.cancel_outlined,
+                              baseColor: Colors.red,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ),
+                          const Gap(10),
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              title: "Notlar",
+                              count: stats.notSayisi.toString(),
+                              icon: Icons.description_outlined,
+                              baseColor: Colors.yellow[700]!,
+                              isDarkMode: isDarkMode,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const Gap(30),
-                ],
+
+                    const Gap(25),
+                    Text(
+                      "Sınav İstatistikleri",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: mainTextColor,
+                        fontFamily: GoogleFonts.montserrat().fontFamily,
+                      ),
+                    ),
+                    const Gap(15),
+
+                    // --- 2. HEDEFLER (MAX TYT/AYT) ---
+                    IntrinsicHeight(
+                      key: _keyTytRow, // <--- KEY EKLENDİ
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _buildGoalCard(
+                              context,
+                              label: "En Yüksek TYT",
+                              value: stats.maxTytNet.toStringAsFixed(1),
+                              baseColor: Colors.blue,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ),
+                          const Gap(15),
+                          Expanded(
+                            child: _buildGoalCard(
+                              context,
+                              label: "En Yüksek AYT",
+                              value: stats.maxAytNet.toStringAsFixed(1),
+                              baseColor: Colors.deepPurple,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(15),
+                    // --- 3. ORTALAMALAR (SON 3) ---
+                    IntrinsicHeight(
+                      key: _keyAytRow, // <--- KEY EKLENDİ
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _buildGoalCard(
+                              context,
+                              label: "Son 3 TYT Ort.",
+                              value: stats.son3TytOrt.toStringAsFixed(1),
+                              baseColor: Colors.green,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ),
+                          const Gap(15),
+                          Expanded(
+                            child: _buildGoalCard(
+                              context,
+                              label: "Son 3 AYT Ort.",
+                              value: stats.son3AytOrt.toStringAsFixed(1),
+                              baseColor: Colors.orange[800]!,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(30),
+
+                    // --- 4. AKSİYON BUTONLARI ---
+                    // Keyler _buildActionCard içine parametre olarak zaten gönderiliyor.
+                    // --- 4. AKSİYON BUTONLARI KISMI ---
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // SORU EKLE BUTONU
+                          Expanded(
+                            child: _buildActionCard(
+                              context,
+                              key: _keySoruEkle, // <--- BURASI TAMAM
+                              label: "Soru Ekle",
+                              icon: Icons.add_circle,
+                              baseColor: Colors.blue,
+                              isDarkMode: isDarkMode,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SoruEkle(),
+                                ),
+                              ).then((_) => ref.invalidate(dashboardProvider)),
+                            ),
+                          ),
+                          const Gap(15),
+
+                          // DENEME EKLE BUTONU
+                          Expanded(
+                            child: _buildActionCard(
+                              context,
+                              key: _keyDenemeEkle, // <--- BURASI EKLİ OLMALI
+                              label: "Deneme Ekle",
+                              icon: Icons.note_add,
+                              baseColor: Colors.purpleAccent,
+                              isDarkMode: isDarkMode,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const DenemeEklePage(),
+                                ),
+                              ).then((_) => ref.invalidate(dashboardProvider)),
+                            ),
+                          ),
+                          const Gap(15),
+
+                          // NOT EKLE BUTONU
+                          Expanded(
+                            child: _buildActionCard(
+                              context,
+                              key: _keyNotEkle, // <--- BURASI EKLİ OLMALI
+                              label: "Not Ekle",
+                              icon: Icons.post_add,
+                              baseColor: Colors.amber[700]!,
+                              isDarkMode: isDarkMode,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const BilgiNotuEklePage(),
+                                ),
+                              ).then((_) => ref.invalidate(dashboardProvider)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Gap(25),
+
+                    // --- 5. ANALİZ BUTONU ---
+                    GestureDetector(
+                      key: _keyAnaliz, // <--- KEY MEVCUT VE DOĞRU YERDE
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DenemeAnalizPage(),
+                        ),
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? const Color(0xFF2E5C46)
+                              : const Color(0xFFE0F2E9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.green[800]
+                                    : Colors.green[200],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.bar_chart,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.green[800],
+                              ),
+                            ),
+                            const Gap(10),
+                            Text(
+                              "İstatistikleri Gör",
+                              style: TextStyle(
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.green[800],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Gap(30),
+                  ],
+                ),
               ),
             ),
           );

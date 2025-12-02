@@ -29,7 +29,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
   final _formKey = GlobalKey<FormState>();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  bool _isLoading = false;
   static const List<String> dersler = <String>[
     'Mezun',
     '12',
@@ -144,184 +144,205 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
 
               Form(
                 key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel("Ad Soyad", textColor),
-                    TextFormField(
-                      controller: _userNameController,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Lütfen ad soyad giriniz.';
-                        }
-                        // E-posta formatı için RegExp
-                        return null; // Her şey yolundaysa null döndür.
-                      },
-                      decoration: _inputStyle(
-                        hintText: "Kullanıcı Adı",
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
-                    // --- SINAV SEÇİMİ ---
-                    _buildLabel(
-                      "Sınav Seçimi",
-                      textColor,
-                      subText: "Daha sonra değiştirilemez",
-                    ),
-                    _sinavSecim(
-                      selectedSinav,
-                      "Sınav Seçimi",
-                      label1: "YKS",
-                      label2: "LGS",
-                      icon1: Icon(Icons.school_outlined),
-                      icon2: Icon(Icons.assessment_outlined),
-                    ),
-                    _buildLabel("Alan Seçimi", textColor),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [_alanSecim()],
-                    ),
-
-                    _buildLabel("Sınıf Seçimi", textColor),
-                    _sinifSecim(),
-
-                    _buildLabel("Kullanıcı kodu(yoksa boş bırakın)", textColor),
-                    TextFormField(
-                      keyboardType: TextInputType.text,
-                      textInputAction: TextInputAction.next,
-                      controller: _passwordController,
-                      autovalidateMode: AutovalidateMode.onUnfocus,
-                      validator: (value) {
-                        final trimmedValue = value?.trim();
-
-                        if (trimmedValue == null || trimmedValue.isEmpty) {
-                          return null; // Boş bırakılabilir, bu yüzden hata yok.
-                        }
-
-                        // Eğer boş değilse, uzunluğunun 8 karakter olup olmadığını kontrol eder.
-                        if (trimmedValue.length != 8) {
-                          return 'Kullanıcı kodu 8 karakter olmalıdır';
-                        }
-
-                        // Her iki koşul da sağlanıyorsa, yani değer ya boş ya da 8 karakterse hata yok.
-                        return null;
-                      },
-                      decoration: _inputStyle(
-                        hintText: "XXXXXXXX",
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
-                    SizedBox(height: 30),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton(
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            // Eğer form geçerliyse, butona basma işlemini gerçekleştir
-                            //Firestore a kayıt işlem
-                            final selectedSinav = ref.read(sinavProvider);
-                            final selectedSinav2 = ref.read(sinavProvider2);
-                            final selectedSinif = ref.read(sinifProvider);
-                            final UserAuth auth = UserAuth();
-                            int asd;
-
-                            if (_passwordController.text.isEmpty) {
-                              _userKayit(
-                                _userNameController.text,
-                                selectedSinav,
-                                selectedSinif,
-                                selectedSinav2,
-                                context,
-                                false,
-                              );
-                              return;
-                            }
-                            asd = await auth.checkLicenseKey(
-                              _passwordController.text.isEmpty
-                                  ? ""
-                                  : _passwordController.text,
-                            );
-                            final ctx = context;
-                            if (!ctx.mounted) return;
-                            switch (asd) {
-                              case 4:
-                                //mail doğrulanmış mı kontrol et sonra kayıt yap
-                                _userKayit(
-                                  _userNameController.text,
-                                  selectedSinav,
-                                  selectedSinif,
-                                  selectedSinav2,
-                                  context,
-                                  true,
-                                );
-
-                                break;
-                              case 3:
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Üzgünüz, maalesef girdiğiniz kodun kullanım hakkı dolmuş.',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                break;
-                              case 2:
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Üzgünüz, maalesef girdiğiniz kod geçersiz',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                break;
-                              default:
-                              //bilinmeyen bir hata oldu
-                            }
-
-                            //, sinif: sinif, sinav: sinav, alan: alan, kurumKodu: kurumKodu)
-                            // Kayıt olma fonksiyonunuzu çağırabilirsiniz
-                          } else {
-                            // Form geçerli değilse, kullanıcıya hata mesajı göster
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Lütfen formdaki hataları düzeltin.',
-                                ),
-                              ),
-                            );
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel("Ad Soyad", textColor),
+                      TextFormField(
+                        controller: _userNameController,
+                        autofillHints: const [AutofillHints.name],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Lütfen ad soyad giriniz.';
                           }
+                          // E-posta formatı için RegExp
+                          return null; // Her şey yolundaysa null döndür.
                         },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFFBBDEFB,
-                          ), // Çok açık mavi
-                          foregroundColor: primaryColor, // Yazı rengi koyu mavi
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
+                        decoration: _inputStyle(
+                          hintText: "Kullanıcı Adı",
+                          isDarkMode: isDarkMode,
                         ),
-                        child: const Text(
-                          "Kaydı Tamamla",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                      ),
+                      // --- SINAV SEÇİMİ ---
+                      _buildLabel(
+                        "Sınav Seçimi",
+                        textColor,
+                        subText: "Daha sonra değiştirilemez",
+                      ),
+                      _sinavSecim(
+                        selectedSinav,
+                        "Sınav Seçimi",
+                        label1: "YKS",
+                        label2: "LGS",
+                        icon1: Icon(Icons.school_outlined),
+                        icon2: Icon(Icons.assessment_outlined),
+                      ),
+                      _buildLabel("Alan Seçimi", textColor),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [_alanSecim()],
+                      ),
+
+                      _buildLabel("Sınıf Seçimi", textColor),
+                      _sinifSecim(),
+
+                      _buildLabel(
+                        "Kullanıcı kodu(yoksa boş bırakın)",
+                        textColor,
+                      ),
+                      TextFormField(
+                        keyboardType: TextInputType.text,
+                        textInputAction: TextInputAction.next,
+                        controller: _passwordController,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        validator: (value) {
+                          final trimmedValue = value?.trim();
+
+                          if (trimmedValue == null || trimmedValue.isEmpty) {
+                            return null; // Boş bırakılabilir, bu yüzden hata yok.
+                          }
+
+                          // Eğer boş değilse, uzunluğunun 8 karakter olup olmadığını kontrol eder.
+                          if (trimmedValue.length != 8) {
+                            return 'Kullanıcı kodu 8 karakter olmalıdır';
+                          }
+
+                          // Her iki koşul da sağlanıyorsa, yani değer ya boş ya da 8 karakterse hata yok.
+                          return null;
+                        },
+                        decoration: _inputStyle(
+                          hintText: "XXXXXXXX",
+                          isDarkMode: isDarkMode,
+                        ),
+                      ),
+                      SizedBox(height: 30),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    // Eğer form geçerliyse, butona basma işlemini gerçekleştir
+                                    //Firestore a kayıt işlem
+                                    setState(() => _isLoading = true);
+                                    FocusScope.of(context).unfocus();
+                                    final selectedSinav = ref.read(
+                                      sinavProvider,
+                                    );
+                                    final selectedSinav2 = ref.read(
+                                      sinavProvider2,
+                                    );
+                                    final selectedSinif = ref.read(
+                                      sinifProvider,
+                                    );
+                                    final UserAuth auth = UserAuth();
+                                    int asd;
+
+                                    if (_passwordController.text.isEmpty) {
+                                      _userKayit(
+                                        _userNameController.text,
+                                        selectedSinav,
+                                        selectedSinif,
+                                        selectedSinav2,
+                                        context,
+                                        false,
+                                      );
+                                      return;
+                                    }
+                                    asd = await auth.checkLicenseKey(
+                                      _passwordController.text.isEmpty
+                                          ? ""
+                                          : _passwordController.text,
+                                    );
+                                    final ctx = context;
+                                    if (!ctx.mounted) return;
+                                    switch (asd) {
+                                      case 4:
+                                        //mail doğrulanmış mı kontrol et sonra kayıt yap
+                                        _userKayit(
+                                          _userNameController.text,
+                                          selectedSinav,
+                                          selectedSinif,
+                                          selectedSinav2,
+                                          context,
+                                          true,
+                                        );
+
+                                        break;
+                                      case 3:
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Üzgünüz, maalesef girdiğiniz kodun kullanım hakkı dolmuş.',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        break;
+                                      case 2:
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Üzgünüz, maalesef girdiğiniz kod geçersiz',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        break;
+                                      default:
+                                      //bilinmeyen bir hata oldu
+                                    }
+
+                                    //, sinif: sinif, sinav: sinav, alan: alan, kurumKodu: kurumKodu)
+                                    // Kayıt olma fonksiyonunuzu çağırabilirsiniz
+                                  } else {
+                                    // Form geçerli değilse, kullanıcıya hata mesajı göster
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Lütfen formdaki hataları düzeltin.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(
+                              0xFFBBDEFB,
+                            ), // Çok açık mavi
+                            foregroundColor:
+                                primaryColor, // Yazı rengi koyu mavi
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                          ),
+                          child: const Text(
+                            "Kaydı Tamamla",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: 50),
-                    SizedBox(
-                      width: double.infinity,
-                      height: MediaQuery.of(context).size.height * 0.3,
-                      child: SvgPicture.asset(
-                        "assets/Illustrations/education.svg",
+                      SizedBox(height: 50),
+                      SizedBox(
+                        width: double.infinity,
+                        height: MediaQuery.of(context).size.height * 0.3,
+                        child: SvgPicture.asset(
+                          "assets/Illustrations/education.svg",
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -555,6 +576,13 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     bool isPro,
   ) async {
     try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: "user-not-found",
+          message: "Oturum bulunamadı.",
+        );
+      }
       UserAuth().saveUserData(
         userName: userName,
         email: _auth.currentUser!.email!,

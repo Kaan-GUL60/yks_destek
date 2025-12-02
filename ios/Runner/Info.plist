@@ -39,9 +39,9 @@
 		<true/>
 
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Galerinizden soru seçebilmek için erişim iznin vermeniz gerekmetedir.</string>
+		<string>Galerinizden soru seçebilmek için erişim iznin vermeniz gerekmektedir.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>Kameranız ile soru resmi çekebilmek için kameranıza erişim izni vermeniz gerekmetedir.</string>
+		<string>Kameranız ile soru resmi çekebilmek için kameranıza erişim izni vermeniz gerekmektedir.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Uygulama, video kaydı sırasında ses alabilmek için mikrofona erişmek istiyor.</string>
 		<key>UILaunchStoryboardName</key>
@@ -76,5 +76,60 @@
 
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>SKAdNetworkItems</key>
+		<array>
+			<!-- Google AdMob -->
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>cstr6suwn9.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>4fzdc2evr5.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>2fnua5tdw4.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>ydx93a7ass.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>5a6flpkh64.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>v72qych5uu.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>n6fk4nfna4.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>kbd757ywx3.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>cstr6suwn9.skadnetwork</string>
+			</dict>
+		</array>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>fetch</string>
+			<string>remote-notification</string>
+		</array>
+
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Uygulamanın fotoğrafları galerinize kaydedebilmesi için izin gereklidir.</string>
+
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<true/>
+		</dict>
+
 	</dict>
 </plist>

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -61,6 +62,18 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // 2. APP CHECK ENTEGRASYON BÖLÜMÜ (Buraya Ekle)
+    await FirebaseAppCheck.instance.activate(
+      // Uygulama yayında olduğu için Play Integrity kullanıyoruz.
+      providerAndroid: kDebugMode
+          ? AndroidDebugProvider()
+          : AndroidPlayIntegrityProvider(),
+
+      providerApple: kDebugMode
+          ? AppleDebugProvider()
+          : AppleAppAttestProvider(),
+    );
+    // ----------------------------------------------------
     await FirebaseAuth.instance.setLanguageCode('tr');
     await initializeDateFormatting('tr_TR', "");
 
