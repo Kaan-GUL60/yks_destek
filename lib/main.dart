@@ -95,8 +95,20 @@ Future<void> main() async {
       notificationLaunchPayload = launchDetails!.notificationResponse?.payload;
       debugPrint("Payload (terminated) kaydedildi: $notificationLaunchPayload");
     }
-    setupFCM();
-    await subscribeToTopic('all');
+    try {
+      setupFCM();
+      // Sadece gerçek cihazlarda veya token varsa abone olmaya çalış
+      await subscribeToTopic('all').timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          debugPrint(
+            "Bildirim aboneliği zaman aşımına uğradı (Simülatör olabilir).",
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint("Bildirim hatası (Simülatörde normaldir): $e");
+    }
 
     /*if (Platform.isAndroid) {
       await Permission.notification.request();
