@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -300,7 +303,11 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
         ],*/
       ),
       body: dashboardAsyncValue.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+          child: Platform.isIOS
+              ? const CupertinoActivityIndicator()
+              : const CircularProgressIndicator(),
+        ),
         error: (err, stack) =>
             Center(child: Text("Veri yüklenirken hata oluştu: $err")),
         data: (stats) {
@@ -339,7 +346,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                               context,
                               title: "Çözülen",
                               count: stats.cozulenSoru.toString(),
-                              icon: Icons.check_circle_outline,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.check_mark_circled
+                                  : Icons.check_circle_outline,
                               baseColor: Colors.green,
                               isDarkMode: isDarkMode,
                             ),
@@ -350,7 +359,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                               context,
                               title: "Bekleyen",
                               count: stats.bekleyenSoru.toString(),
-                              icon: Icons.timer_outlined,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.timer
+                                  : Icons.timer_outlined,
                               baseColor: Colors.orange,
                               isDarkMode: isDarkMode,
                             ),
@@ -361,7 +372,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                               context,
                               title: "Yanlış",
                               count: stats.yanlisSoru.toString(),
-                              icon: Icons.cancel_outlined,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.xmark_circle
+                                  : Icons.cancel_outlined,
                               baseColor: Colors.red,
                               isDarkMode: isDarkMode,
                             ),
@@ -372,7 +385,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                               context,
                               title: "Notlar",
                               count: stats.notSayisi.toString(),
-                              icon: Icons.description_outlined,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.doc_text
+                                  : Icons.description_outlined,
                               baseColor: Colors.yellow[700]!,
                               isDarkMode: isDarkMode,
                             ),
@@ -465,7 +480,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                               context,
                               key: _keySoruEkle, // <--- BURASI TAMAM
                               label: "Soru Ekle",
-                              icon: Icons.add_circle,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.add_circled
+                                  : Icons.add_circle,
                               baseColor: Colors.blue,
                               isDarkMode: isDarkMode,
                               onTap: () => Navigator.push(
@@ -484,7 +501,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                               context,
                               key: _keyDenemeEkle, // <--- BURASI EKLİ OLMALI
                               label: "Deneme Ekle",
-                              icon: Icons.note_add,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.doc_append
+                                  : Icons.note_add,
                               baseColor: Colors.purpleAccent,
                               isDarkMode: isDarkMode,
                               onTap: () => Navigator.push(
@@ -503,7 +522,9 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                               context,
                               key: _keyNotEkle, // <--- BURASI EKLİ OLMALI
                               label: "Not Ekle",
-                              icon: Icons.post_add,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.pencil_outline
+                                  : Icons.post_add,
                               baseColor: Colors.amber[700]!,
                               isDarkMode: isDarkMode,
                               onTap: () => Navigator.push(
@@ -550,7 +571,10 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                Icons.bar_chart,
+                                // Platforma göre ikon
+                                Platform.isIOS
+                                    ? CupertinoIcons.chart_bar_alt_fill
+                                    : Icons.bar_chart,
                                 color: isDarkMode
                                     ? Colors.white
                                     : Colors.green[800],
