@@ -40,8 +40,11 @@ class DenemeAnalizPage extends ConsumerWidget {
                   MaterialPageRoute(builder: (_) => const DenemeEklePage()),
                 ).then((_) {
                   // Geri dönüldüğünde verileri yenile
-                  ref.invalidate(tytListProvider);
-                  ref.invalidate(aytListProvider);
+                  // DÜZELTME: Sayfa hala açık mı kontrol et
+                  if (context.mounted) {
+                    ref.invalidate(tytListProvider);
+                    ref.invalidate(aytListProvider);
+                  }
                 });
               },
               icon: Container(

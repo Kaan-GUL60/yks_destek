@@ -67,7 +67,7 @@ class _FilterControls extends ConsumerWidget {
     final dropdownDecoration = InputDecoration(
       filled: true,
       fillColor: isDarkMode ? const Color(0xFF1F2937) : Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -166,13 +166,19 @@ class _FilterControls extends ConsumerWidget {
                         hint: Text(
                           'Ders Seç',
                           style: dropdownDecoration.hintStyle,
+                          maxLines: 1, // EKLENDİ
+                          overflow: TextOverflow.ellipsis, // EKLENDİ
                         ),
                         isExpanded: true,
                         // ... (Geri kalan Android kodunuz buraya) ...
                         items: dersler.toSet().toList().map((ders) {
                           return DropdownMenuItem(
                             value: ders,
-                            child: Text(ders),
+                            child: Text(
+                              ders,
+                              maxLines: 1, // EKLENDİ
+                              overflow: TextOverflow.ellipsis, // EKLENDİ),
+                            ),
                           );
                         }).toList(),
                         onChanged: (value) => notifier.setDers(value),
@@ -259,8 +265,11 @@ class _FilterControls extends ConsumerWidget {
                     // --- ANDROID KISMI (ESKİ KODUNUZ) ---
                     : DropdownButtonFormField<String>(
                         initialValue: filterState['konu'],
+                        isExpanded: true,
                         hint: Text(
                           'Konu Seç',
+                          maxLines: 1, // EKLENDİ
+                          overflow: TextOverflow.ellipsis, // EKLENDİ
                           style: dropdownDecoration.hintStyle,
                         ),
                         // ... (Geri kalan Android kodunuz buraya) ...
@@ -268,7 +277,11 @@ class _FilterControls extends ConsumerWidget {
                             ? konular.toSet().toList().map((konu) {
                                 return DropdownMenuItem(
                                   value: konu,
-                                  child: Text(konu),
+                                  child: Text(
+                                    konu,
+                                    maxLines: 1, // EKLENDİ
+                                    overflow: TextOverflow.ellipsis, // EKLENDİ
+                                  ),
                                 );
                               }).toList()
                             : [],

@@ -84,6 +84,7 @@ class ImagePickerNotifier extends StateNotifier<File?> {
         final XFile? pickedFile = await _picker.pickImage(
           source: ImageSource.camera,
           imageQuality: 80,
+          requestFullMetadata: false, // <--- BU SATIRI EKLEYİN (Sorunu Çözer)
         );
 
         if (pickedFile != null) {

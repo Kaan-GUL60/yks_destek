@@ -13,6 +13,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
 import 'package:kgsyks_destek/cloud_message/services.dart';
+import 'package:kgsyks_destek/pages/favoriler_page/sorular_list_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/list_providers.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
@@ -725,57 +726,71 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     StateProvider query,
     StateProvider selected,
   ) async {
-    // Diyalogdan dönen değeri yakala
     String? secilen;
 
     if (Platform.isIOS) {
-      // --- iOS KISMI (YENİ - Picker View) ---
-      // Not: Burada listenin tamamını çekmek için ref.read(filtered) kullanıyoruz
-      // Ancak filtered bir Provider olduğu için build içinde değilsek watch/read kullanımı tricky olabilir.
-      // Mevcut yapınızda context üzerinden ref'e erişebiliyorsanız sorun yok.
-      // Basitlik adına iOS için de modal bottom sheet içinde listeyi gösteriyoruz.
-
+      // --- iOS KISMI (AYNEN KALIYOR) ---
       secilen = await showModalBottomSheet<String>(
         context: context,
-        isScrollControlled: true, // Tam ekranmsı his için
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
         builder: (context) {
           return DraggableScrollableSheet(
-            expand: false,
+            initialChildSize: 0.8,
+            maxChildSize: 0.9,
+            minChildSize: 0.5,
             builder: (context, scrollController) {
-              return ProviderScope(
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final filteredOlan = ref.watch(filtered); // Listeyi al
-                    // iOS tarzı arama çubuğu ve liste
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: CupertinoSearchTextField(
-                            placeholder: "Ara",
-                            onChanged: (value) {
-                              ref.read(query.notifier).state = value;
-                            },
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: ProviderScope(
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final filteredOlan = ref.watch(filtered);
+                      return Column(
+                        children: [
+                          const Gap(10),
+                          Container(
+                            width: 40,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: ListView.separated(
-                            controller: scrollController,
-                            itemCount: filteredOlan.length,
-                            separatorBuilder: (c, i) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final item = filteredOlan[index];
-                              return ListTile(
-                                title: Text(item),
-                                onTap: () => Navigator.pop(context, item),
-                              );
-                            },
+                          const Gap(10),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: CupertinoSearchTextField(
+                              placeholder: "Ara",
+                              onChanged: (value) {
+                                ref.read(query.notifier).state = value;
+                              },
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
+                          Expanded(
+                            child: ListView.separated(
+                              controller: scrollController,
+                              itemCount: filteredOlan.length,
+                              separatorBuilder: (c, i) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final item = filteredOlan[index];
+                                return ListTile(
+                                  title: Text(item),
+                                  onTap: () => Navigator.pop(context, item),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               );
             },
@@ -783,33 +798,95 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
         },
       );
     } else {
-      // --- ANDROID KISMI (MEVCUT KOD - AYNEN KALDI) ---
+      // --- ANDROID KISMI (DÜZELTİLDİ) ---
+      // Buradaki hata şuydu: Dialog içeriği ProviderScope ile düzgün sarmalanmamış veya
+      // Consumer widget'ı veriyi alamıyordu. Şimdi düzeltildi.
       secilen = await showDialog<String>(
         context: context,
         builder: (BuildContext context) {
-          // ... (Eski kodunuz buraya) ...
+          // Dialog'u ProviderScope ile sarmalıyoruz ki içindeki Consumer çalışabilsin
           return ProviderScope(
             child: Dialog(
-              // ...
-              // (Android diyalog kodlarınızın tamamı)
-              // ...
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              // Dialog'un arka plan rengi ve boyutu için child Container
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final filteredOlan = ref.watch(filtered);
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: "Ara",
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[200],
+                            ),
+                            onChanged: (value) {
+                              ref.read(query.notifier).state = value;
+                            },
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        Flexible(
+                          child: filteredOlan.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: Text("Sonuç bulunamadı."),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  itemCount: filteredOlan.length,
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(height: 1),
+                                  itemBuilder: (context, index) {
+                                    final item = filteredOlan[index];
+                                    return ListTile(
+                                      title: Text(item),
+                                      onTap: () {
+                                        Navigator.of(context).pop(item);
+                                      },
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           );
         },
       );
     }
 
-    // Eğer bir ders seçildiyse (dialog null dönmediyse)
+    // --- ORTAK İŞLEMLER (Seçilen Değeri Atama) ---
     if (secilen != null) {
-      // provider'ın değerini güncelliyoruz.
       ref.read(selected.notifier).state = secilen;
-      if (filtered == filteredDerslerProvider) {
+      // Sadece Ders filtresiyse, konuyu da buna göre filtrele
+      // NOT: filteredDerslerProvider'a erişmek için ref.read kullanamayız (burası async bir fonksiyon).
+      // Bu yüzden if kontrolünü provider'ın kendisine göre değil, mantığına göre yapıyoruz.
+
+      // Eğer seçilen provider 'selectedDersProvider' ise (yani ders seçildiyse)
+      if (selected == selectedDersProvider) {
+        final dersler = ref.read(dersListProvider); // Ders listesini al
         int konununNetlesmesi = dersler.indexOf(secilen);
         setFilterKonBasedOnX(konununNetlesmesi);
       }
     }
-
-    // Diyalog kapandığında arama sorgusunu sıfırla.
     ref.read(query.notifier).state = '';
   }
 

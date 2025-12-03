@@ -240,63 +240,67 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
           border: null,
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              const Gap(10),
-              // iOS Tipi Tab Seçici (Segmented Control)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: CupertinoSlidingSegmentedControl<int>(
-                    groupValue: _cupertinoTabIndex,
-                    thumbColor: primaryColor,
-                    backgroundColor: isDark
-                        ? Colors.grey[800]!
-                        : Colors.grey[200]!,
-                    children: {
-                      0: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          "TYT Ekle",
-                          style: TextStyle(
-                            color: _cupertinoTabIndex == 0
-                                ? Colors.white
-                                : textColor,
-                            fontWeight: FontWeight.bold,
+          child: Material(
+            type: MaterialType
+                .transparency, // <--- Arka planı bozmaması için şeffaf yapın
+            child: Column(
+              children: [
+                const Gap(10),
+                // iOS Tipi Tab Seçici (Segmented Control)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: CupertinoSlidingSegmentedControl<int>(
+                      groupValue: _cupertinoTabIndex,
+                      thumbColor: primaryColor,
+                      backgroundColor: isDark
+                          ? Colors.grey[800]!
+                          : Colors.grey[200]!,
+                      children: {
+                        0: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            "TYT Ekle",
+                            style: TextStyle(
+                              color: _cupertinoTabIndex == 0
+                                  ? Colors.white
+                                  : textColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                      1: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          "AYT Ekle",
-                          style: TextStyle(
-                            color: _cupertinoTabIndex == 1
-                                ? Colors.white
-                                : textColor,
-                            fontWeight: FontWeight.bold,
+                        1: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            "AYT Ekle",
+                            style: TextStyle(
+                              color: _cupertinoTabIndex == 1
+                                  ? Colors.white
+                                  : textColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    },
-                    onValueChanged: (int? value) {
-                      if (value != null) {
-                        setState(() {
-                          _cupertinoTabIndex = value;
-                        });
-                      }
-                    },
+                      },
+                      onValueChanged: (int? value) {
+                        if (value != null) {
+                          setState(() {
+                            _cupertinoTabIndex = value;
+                          });
+                        }
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const Gap(10),
-              Expanded(
-                child: _cupertinoTabIndex == 0
-                    ? _buildTytForm(textColor, primaryColor, isDark)
-                    : _buildAytForm(textColor, primaryColor, isDark),
-              ),
-            ],
+                const Gap(10),
+                Expanded(
+                  child: _cupertinoTabIndex == 0
+                      ? _buildTytForm(textColor, primaryColor, isDark)
+                      : _buildAytForm(textColor, primaryColor, isDark),
+                ),
+              ],
+            ),
           ),
         ),
       );

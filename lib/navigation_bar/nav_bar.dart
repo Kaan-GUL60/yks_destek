@@ -16,16 +16,16 @@ class CustomBottomNavigationBar extends ConsumerWidget {
       'icon': Icons.auto_graph_outlined,
       'activeIcon': Icons.auto_graph,
       // iOS İkonları (Cupertino)
-      'iosIcon': CupertinoIcons.graph_square,
-      'iosActiveIcon': CupertinoIcons.graph_square_fill,
+      'iosIcon': Icons.auto_graph_outlined,
+      'iosActiveIcon': Icons.auto_graph,
     },
     {
       'label': "Kartlar",
       'icon': Icons.library_books_outlined,
       'activeIcon': Icons.library_books,
       // iOS için 'rectangle_stack' (Kartlar/Kütüphane metaforu için uygundur)
-      'iosIcon': CupertinoIcons.rectangle_stack,
-      'iosActiveIcon': CupertinoIcons.rectangle_stack_fill,
+      'iosIcon': Icons.library_books_outlined,
+      'iosActiveIcon': Icons.library_books,
     },
     {
       'label': "Ana Ekran",
@@ -40,16 +40,16 @@ class CustomBottomNavigationBar extends ConsumerWidget {
       'icon': Icons.quiz_outlined,
       'activeIcon': Icons.quiz,
       // iOS Soru işareti / Liste ikonu
-      'iosIcon': CupertinoIcons.question_circle,
-      'iosActiveIcon': CupertinoIcons.question_circle_fill,
+      'iosIcon': Icons.quiz_outlined,
+      'iosActiveIcon': Icons.quiz,
     },
     {
       'label': "Profil",
       'icon': Icons.person_outline,
       'activeIcon': Icons.person,
       // iOS Profil ikonu
-      'iosIcon': CupertinoIcons.person,
-      'iosActiveIcon': CupertinoIcons.person_fill,
+      'iosIcon': Icons.person_outline,
+      'iosActiveIcon': Icons.person,
     },
   ];
 
