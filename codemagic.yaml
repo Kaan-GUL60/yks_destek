@@ -1,0 +1,50 @@
+workflows:
+  my-workflow:
+    name: iOS Build (Telefon ve Web icin)
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: GoogleService-Info.plist'i Xcode'a Ekle (Windows Fix)
+        script: |
+          # Bu betik, Windows'ta eklenen dosyayi Xcode projesine tanitir
+          gem install xcodeproj
+          ruby -e '
+            require "xcodeproj"
+            project_path = "ios/Runner.xcodeproj"
+            project = Xcodeproj::Project.open(project_path)
+            file_name = "GoogleService-Info.plist"
+            # Dosyanin zaten ekli olup olmadigini kontrol et
+            unless project.main_group["Runner"].files.any? { |f| f.path == file_name }
+              file_ref = project.main_group["Runner"].new_file(file_name)
+              project.targets.first.add_resources([file_ref])
+              project.save
+              puts "Dosya basariyla Xcode projesine eklendi!"
+            else
+              puts "Dosya zaten projede ekli."
+            end
+          '
+
+      - name: Paketleri Getir
+        script: |
+          flutter pub get
+          # Podfile'i onceden garantiye alalim (eger yoksa)
+          find . -name "Podfile" -execdir pod install \;
+
+      - name: 1. Telefon icin Build Al (.ipa)
+        script: |
+          flutter build ipa --release --no-codesign
+
+      - name: 2. Web Simulator icin Build Al (.zip)
+        script: |
+          flutter build ios --debug --simulator
+          cd build/ios/iphonesimulator
+          # Simülatör build'ini ziple
+          zip -r Runner.zip Runner.app
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/iphonesimulator/*.zip
+      - flutter_drive.log

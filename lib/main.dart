@@ -1,21 +1,21 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:kgsyks_destek/cloud_message/services.dart';
-import 'package:kgsyks_destek/const.dart';
 import 'package:kgsyks_destek/firebase_options.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/sign/kontrol_db.dart';
-import 'package:kgsyks_destek/theme_section/custom_theme.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:kgsyks_destek/theme_section/app_theme.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/database_helper.dart';
 
 //final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -54,13 +54,28 @@ Future<bool> _hasConnection() async {
 final settingStorage = BooleanSettingStorage();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  unawaited(MobileAds.instance.initialize());
   String? notificationLaunchPayload;
   final online = await _hasConnection();
   if (online) {
+    //
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // 2. APP CHECK ENTEGRASYON BÖLÜMÜ (Buraya Ekle)
+    await FirebaseAppCheck.instance.activate(
+      // Uygulama yayında olduğu için Play Integrity kullanıyoruz.
+      providerAndroid: kDebugMode
+          ? AndroidDebugProvider()
+          : AndroidPlayIntegrityProvider(),
+
+      providerApple: kDebugMode
+          ? AppleDebugProvider()
+          : AppleAppAttestProvider(),
+    );
+    // ----------------------------------------------------
     await FirebaseAuth.instance.setLanguageCode('tr');
+    await initializeDateFormatting('tr_TR', "");
 
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
     PlatformDispatcher.instance.onError = (error, stack) {
@@ -80,19 +95,20 @@ Future<void> main() async {
       notificationLaunchPayload = launchDetails!.notificationResponse?.payload;
       debugPrint("Payload (terminated) kaydedildi: $notificationLaunchPayload");
     }
-    setupFCM();
-    await subscribeToTopic('all');
-
-    if (Platform.isAndroid) {
-      await Permission.notification.request();
-      await fln
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestExactAlarmsPermission();
+    try {
+      setupFCM();
+      // Sadece gerçek cihazlarda veya token varsa abone olmaya çalış
+      await subscribeToTopic('all').timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          debugPrint(
+            "Bildirim aboneliği zaman aşımına uğradı (Simülatör olabilir).",
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint("Bildirim hatası (Simülatörde normaldir): $e");
     }
-
-    Gemini.init(apiKey: geminiApiKey);
   } else {
     // offline modda sadece lokal işleyiş
     debugPrint('Başlangıç: internet yok, Firebase başlatılmadı');
@@ -105,14 +121,6 @@ Future<void> main() async {
       debugPrint(
         "Payload (offline-terminated) kaydedildi: $notificationLaunchPayload",
       );
-    }
-    if (Platform.isAndroid) {
-      await Permission.notification.request();
-      await fln
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestExactAlarmsPermission();
     }
   }
   await settingStorage.initializeDatabase();

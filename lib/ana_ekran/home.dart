@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/navigation_bar/nav_bar.dart';
 import 'package:kgsyks_destek/pages/ana_ekran.dart';
-import 'package:kgsyks_destek/pages/analiz_page/analiz_page.dart';
-import 'package:kgsyks_destek/pages/favoriler_page/favoriler_page.dart';
+import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_karti_ogrenme_view.dart';
+import 'package:kgsyks_destek/pages/grafikler/deneme_analiz_page.dart';
 import 'package:kgsyks_destek/pages/profil_page.dart';
 // ignore: unused_import
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
+import 'package:kgsyks_destek/pages/tabbar/main_tabs_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -19,13 +20,13 @@ class HomePage extends ConsumerWidget {
     Widget getPage(int index) {
       switch (index) {
         case 0:
-          return AnalizPage(key: UniqueKey());
+          return DenemeAnalizPage(key: UniqueKey());
         case 1:
-          return SoruEkle(key: UniqueKey());
+          return BilgiKartiOgrenmePage(key: UniqueKey());
         case 2:
           return AnaEkran(key: UniqueKey());
         case 3:
-          return FavorilerPage(key: UniqueKey());
+          return MainTabsPage(key: UniqueKey());
         case 4:
           return ProfilePage(key: UniqueKey());
         default:

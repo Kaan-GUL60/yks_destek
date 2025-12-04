@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,10 +28,29 @@ class SplashScreen extends ConsumerWidget {
     return isUserRegistered;
   }
 
+  Future<void> _initAppTracking() async {
+    if (Platform.isIOS) {
+      try {
+        final status =
+            await AppTrackingTransparency.trackingAuthorizationStatus;
+        if (status == TrackingStatus.notDetermined) {
+          // Kullanıcıya izni sor
+          await Future.delayed(const Duration(milliseconds: 200));
+          await AppTrackingTransparency.requestTrackingAuthorization();
+        }
+      } catch (e) {
+        debugPrint("ATT Hatası: $e");
+      }
+    }
+  }
+
   // Yönlendirme mantığını içeren ana asenkron fonksiyon
   Future<void> _navigateToNextScreen(BuildContext context) async {
     // Tüm kontrolleri yapmadan önce bekleyin
-    await Future.delayed(const Duration(milliseconds: 500));
+    await _initAppTracking();
+
+    // Bekleme süresi
+    await Future.delayed(const Duration(milliseconds: 400));
 
     final online = await _hasConnection();
     final isRegisteredLocally = await _isUserRegisteredLocally();
@@ -83,6 +105,7 @@ class SplashScreen extends ConsumerWidget {
                 'alan': kullaniciDetay.alan,
                 'kurumKodu': kullaniciDetay.kurumKodu,
                 'isPro': kullaniciDetay.isPro,
+                'createdAt': FieldValue.serverTimestamp(),
               });
         }
         // Offline sayacı Firebase'e gönder ve sıfırla
@@ -92,7 +115,6 @@ class SplashScreen extends ConsumerWidget {
             "offline_acilma_toplam",
             "splash_screen:$offlineCount",
           );
-          await localCounter.reset();
         }
 
         router.goNamed(AppRoute.anaekran.name);
@@ -115,19 +137,7 @@ class SplashScreen extends ConsumerWidget {
     });
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 11, 21, 31),
-      body: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            const SizedBox(height: double.infinity, width: double.infinity),
-            Center(child: Image.asset('assets/logo/logo.png', width: 150)),
-            Positioned(
-              bottom: 50,
-              child: Image.asset('assets/logo/branding.png', width: 200),
-            ),
-          ],
-        ),
-      ),
+      body: Center(child: Image.asset('assets/logo/logo.png')),
     );
   }
 }

@@ -1,9 +1,11 @@
 // ignore_for_file: avoid_print, dead_code
 
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:gap/gap.dart';
@@ -11,17 +13,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/analytics_helper/analytics_helper.dart';
 import 'package:kgsyks_destek/cloud_message/services.dart';
+import 'package:kgsyks_destek/pages/favoriler_page/sorular_list_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/image_picker_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/list_providers.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/listeler.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle_provider.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
-import 'package:kgsyks_destek/pages/soru_ekle/with_ai/ocr_servie.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
-import 'package:kgsyks_destek/theme_section/app_colors.dart';
-import 'package:lottie/lottie.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 DateTime? selectedDate;
 
@@ -36,39 +37,62 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _controllerAciklama = TextEditingController();
-  late final AnimationController _processingLottieController;
-  late final AnimationController _confettiLottieController;
-  bool _showConfetti = false;
-  final Gemini _gemini = Gemini.instance;
+
   // ignore: unused_field
   final bool _ekranKontorl = false;
   String dersAi = "";
   String konuAi = "";
-  @override
-  void initState() {
-    super.initState();
-
-    _processingLottieController = AnimationController(vsync: this);
-    _confettiLottieController = AnimationController(vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _processingLottieController.dispose();
-    _confettiLottieController.dispose();
-    super.dispose();
-  }
 
   Future<void> _selectDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-    );
-    setState(() {
-      selectedDate = picked;
-    });
+    if (Platform.isIOS) {
+      // --- iOS KISMI (YENİ) ---
+      final now = DateTime.now();
+      DateTime tempPickedDate = selectedDate ?? now;
+
+      await showCupertinoModalPopup(
+        context: context,
+        builder: (context) => Container(
+          height: 250,
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 180,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: selectedDate ?? now,
+                  minimumDate: now,
+                  maximumDate: DateTime(2030),
+                  onDateTimeChanged: (val) {
+                    tempPickedDate = val;
+                  },
+                ),
+              ),
+              CupertinoButton(
+                child: const Text('Tamam'),
+                onPressed: () {
+                  setState(() {
+                    selectedDate = tempPickedDate;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // --- ANDROID KISMI (MEVCUT KOD) ---
+      DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2030),
+      );
+      setState(() {
+        selectedDate = picked;
+      });
+    }
   }
 
   void _resetForm() {
@@ -95,22 +119,8 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     final String? secilenHataNedeni = ref.watch(selectedHataNedeniProvider);
     final String? secilenKonu = ref.watch(selectedKonuProvider);
     final File? selectedImage = ref.watch(imagePickerProvider);
-    final String? ocrText = ref.watch(ocrResultProvider);
 
-    // Özelliğin kullanılabilirliği
-
-    // Provider state değişimlerini dinle ve OCR başlat
-    ref.listen<File?>(imagePickerProvider, (previous, next) {
-      if (next != null && next != previous) {
-        //_handleSelectedImage(next); //
-      }
-    });
-    //kayıt işlemler
-    //final File? selectedImage = ref.watch(imagePickerProvider);
-    //kayıt durumu kontrolü için
     final soruKayitState = ref.watch(soruNotifierProvider);
-
-    final UserAuth auth = UserAuth();
 
     ref.listen<SoruKayitState>(soruNotifierProvider, (previous, next) {
       if (next == SoruKayitState.success) {
@@ -130,643 +140,580 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
         );
       }
     });
-    final internetState = ref.watch(internetProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Soru Ekle"),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor:
+            Colors.transparent, // Tasarımda header şeffaf gibi duruyor
+        elevation: 0,
       ),
       // geri dön butonu gelmesi için Navigator.of(context).push(...) bu şekilde aç bu sayfayı
-      body: internetState.when(
-        data: (hasInternet) => Stack(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (false) //false ocrText == null || !hasInternet  ai devreye sokamk için parantez içi mantığı bunla değiştir. kafii
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 30,
-                        right: 30,
-                        top: 10,
-                      ),
-                      child: GestureDetector(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: selectedImage != null
-                              ? Image.file(selectedImage, fit: BoxFit.cover)
-                              : Image.asset(
-                                  'assets/images/soru_ekle_ai.png',
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
-                        onTap: () {
-                          _showImageSourceDialog(context, ref);
-                        },
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  if (true) // true ocrText != null
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Center(
-                          child: Column(
-                            children: [
-                              _addSoruManuel(
-                                selectedImage,
-                                context,
-                                secilenHataNedeni,
-                                secilenDurum,
-                                secilenDers,
-                                secilenKonu,
-                                soruKayitState,
-                                auth,
-                              ),
-                              const Gap(20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // Full-screen processing Lottie
-            if (ref.watch(ocrProcessingProvider))
-              Positioned.fill(
-                child: Container(
-                  color: const Color.fromARGB(255, 245, 245, 245),
-                  child: Center(
-                    child: SizedBox(
-                      width: 200,
-                      height: 200,
-                      child: Lottie.asset(
-                        'assets/animations/ai_load.json',
-                        controller: _processingLottieController,
-                        onLoaded: (composition) {
-                          _processingLottieController
-                            ..duration = composition.duration
-                            ..repeat();
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            // Confetti Lottie overlay
-            if (_showConfetti)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.transparent,
-                  child: Center(
-                    child: SizedBox(
-                      width: 250,
-                      height: 250,
-                      child: Lottie.asset(
-                        'assets/animations/confetti.json',
-                        controller: _confettiLottieController,
-                        onLoaded: (composition) {
-                          _confettiLottieController
-                            ..duration = composition.duration
-                            ..forward(from: 0)
-                            ..addStatusListener((status) {
-                              if (status == AnimationStatus.completed) {
-                                setState(() => _showConfetti = false);
-                              }
-                            });
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) =>
-            const Center(child: Text('İnternet kontrolü yapılamadı')),
-      ),
-    );
-  }
+            _buildImagePickerArea(context, selectedImage, ref),
+            const Gap(20),
 
-  Column _addSoruManuel(
-    File? selectedImage,
-    BuildContext context,
-    String? secilenHataNedeni,
-    String? secilenDurum,
-    String? secilenDers,
-    String? secilenKonu,
-    SoruKayitState soruKayitState,
-    UserAuth auth,
-  ) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.only(left: 15.0, right: 15),
-          child: Column(
-            children: [
-              addSoru(selectedImage, context),
-              Padding(
-                padding: const EdgeInsets.only(left: 15, right: 15, top: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: _secimButton(
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDropdownStyleButton(
+                    context: context,
+                    label: "Ders",
+                    value: secilenDers,
+                    onTap: () {
+                      _secimDialog(
                         context,
-                        secilenDers,
-                        "Ders",
                         filteredDerslerProvider,
                         searchQueryDersProvider,
                         selectedDersProvider,
-                      ),
-                    ),
-                    Gap(10),
-                    Expanded(
-                      child: _secimButton(
+                      );
+                    },
+                  ),
+                ),
+                const Gap(15),
+                Expanded(
+                  child: _buildDropdownStyleButton(
+                    context: context,
+                    label: "Konu",
+                    value: secilenKonu,
+                    onTap: () {
+                      if (secilenDers == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Lütfen önce ders seçiniz.'),
+                          ),
+                        );
+                        return;
+                      }
+                      _secimDialog(
                         context,
-                        secilenKonu,
-                        "Konu",
                         filteredKonuProvider,
                         searchQueryKonuProvider,
                         selectedKonuProvider,
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
+              ],
+            ),
+            const Gap(20),
+
+            // 3. HATA NEDENİ (Chips Listesi)
+            Text("Hata Nedeni", style: _sectionTitleStyle(context)),
+            const Gap(10),
+            _buildChipSelection(
+              context: context,
+              items: hataNedeni, // listeler.dart'tan gelen liste
+              selectedValue: secilenHataNedeni,
+              onSelected: (val) {
+                ref.read(selectedHataNedeniProvider.notifier).state = val;
+              },
+            ),
+            const Gap(20),
+
+            // 4. DURUM (Chips Listesi)
+            Text("Durum", style: _sectionTitleStyle(context)),
+            const Gap(10),
+            _buildChipSelection(
+              context: context,
+              items: durum, // listeler.dart'tan gelen liste
+              selectedValue: secilenDurum,
+              onSelected: (val) {
+                ref.read(selectedDurumProvider.notifier).state = val;
+              },
+            ),
+
+            const Gap(20),
+            // 5. DOĞRU CEVAP (Yuvarlak Seçim Butonları)
+            Text("Doğru Cevap", style: _sectionTitleStyle(context)),
+            const Gap(10),
+            _buildAnswerKeySelector(context, ref),
+
+            const Gap(20),
+            Text("Soru Açıklaması", style: _sectionTitleStyle(context)),
+            const Gap(10),
+            Form(
+              key: _formKey,
+              child: TextFormField(
+                autofocus: false,
+                controller: _controllerAciklama,
+                maxLines: 4,
+                maxLength: 255,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  hintText: "Eklemek istediğiniz notlar...",
+                  // Tema dosyasındaki decoration otomatik uygulanır ama özelleştirme gerekirse:
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                validator: (value) {
+                  if (value != null && value.length > 255) {
+                    return "255 karakteri geçemez";
+                  }
+                  return null;
+                },
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 15, right: 15, top: 10),
+            ),
+
+            const Gap(15),
+
+            // 7. HATIRLATICI TARİHİ
+            Text("Hatırlatıcı Tarihi", style: _sectionTitleStyle(context)),
+            const Gap(10),
+            GestureDetector(
+              onTap: _selectDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).inputDecorationTheme.fillColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.1),
+                  ),
+                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: _secimButton(
-                        context,
-                        secilenHataNedeni,
-                        "Hata Nedeni",
-                        filteredHataNedeniProvider,
-                        searchQueryHataNedeniProvider,
-                        selectedHataNedeniProvider,
+                    Icon(Icons.calendar_today, color: Color(0xFF1E88E5)),
+                    const Gap(10),
+                    Text(
+                      selectedDate == null
+                          ? "Tarih Seçiniz"
+                          : "${selectedDate!.day} Ekim ${selectedDate!.year}", // Ay ismini dinamik yapmak için intl paketi önerilir
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    Gap(10),
-                    Expanded(
-                      child: _secimButton(
-                        context,
-                        secilenDurum,
-                        "Durum",
-                        filteredDurumProvider,
-                        searchQueryDurumProvider,
-                        selectedDurumProvider,
-                      ),
-                    ),
+                    const Spacer(),
+                    if (selectedDate != null)
+                      Icon(Icons.edit, size: 18, color: Colors.grey),
                   ],
                 ),
               ),
+            ),
 
-              Gap(10),
+            const Gap(30),
 
-              _soruCevabSecim(),
-              SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    style: ButtonStyle(
-                      shape: WidgetStatePropertyAll(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
+            // 8. KAYDET BUTONU
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(
+                    0xFF3B82F6,
+                  ), // Tasarımdaki canlı mavi
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: soruKayitState == SoruKayitState.loading
+                    ? null
+                    : () async {
+                        // 1. Önce gerekli alanların dolu olup olmadığını kontrol et
+                        final secilenSoruCevap = ref.read(soruCevabiProvider);
+                        if (secilenDers == null ||
+                            secilenKonu == null ||
+                            secilenDurum == null ||
+                            secilenSoruCevap == null ||
+                            secilenHataNedeni == null ||
+                            selectedImage == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Lütfen resim dahil tüm alanları seçin!",
+                              ),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return; // Eksik bilgi varsa işlemi durdur
+                        }
+                        if (!_formKey.currentState!.validate()) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Lütfen resim dahil tüm alanları seçin!',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        final File? selectedImage2 = ref.read(
+                          imagePickerProvider,
+                        );
+                        if (selectedImage2 == null) return;
+
+                        // 2. KALICI BİR YOL OLUŞTUR VE RESMİ KOPYALA
+                        final appDir = await getApplicationDocumentsDirectory();
+                        final fileName = p.basename(selectedImage2.path);
+                        final savedImagePath = p.join(appDir.path, fileName);
+
+                        // OPTİMİZASYON: Resmi kaydetmeden önce sıkıştır
+                        final compressedImageBytes =
+                            await FlutterImageCompress.compressWithFile(
+                              selectedImage2.path,
+                              quality:
+                                  88, // Sıkıştırma kalitesini ayarla (0-100 arası)
+                            );
+
+                        if (compressedImageBytes == null) {
+                          return;
+                        }
+
+                        // Dosyayı geçici yoldan kalıcı yola kopyala
+                        final File savedImage = File(savedImagePath);
+                        await savedImage.writeAsBytes(compressedImageBytes);
+                        DateTime? selectedDate2 = selectedDate;
+
+                        // 2. Verilerden SoruModel nesnesi oluştur
+                        final yeniSoru = SoruModel(
+                          ders: secilenDers,
+                          konu: secilenKonu,
+                          durum: secilenDurum,
+                          hataNedeni: secilenHataNedeni,
+                          soruCevap: secilenSoruCevap.name,
+                          imagePath: savedImage.path, // Resmin yolunu al
+                          aciklama: _controllerAciklama.text == ""
+                              ? "-"
+                              : _controllerAciklama.text,
+                          eklenmeTarihi: DateTime.now(),
+                          hatirlaticiTarihi: selectedDate2,
+                        );
+
+                        final online = await _hasConnection();
+                        if (online) {
+                          final UserAuth auth = UserAuth();
+                          auth.soruSayiArtir("soruSayi");
+                          AnalyticsService().trackCount(
+                            "buttonClick",
+                            "soru_eklendi",
+                          ); // soru sayıyor
+                        }
+                        //*************************************************************
+                        // 3. Provider aracılığıyla veritabanına kaydet
+                        final int yeniId = await ref
+                            .read(soruNotifierProvider.notifier)
+                            .addSoru(yeniSoru);
+                        //print("---------------------$yeniId");
+                        //print("---------------------$selectedDate2");
+                        if (yeniId > 0 && selectedDate2 != null) {
+                          final DateTime tarih = selectedDate2;
+                          final now = DateTime.now();
+                          final DateTime saat12 = DateTime(
+                            tarih.year,
+                            tarih.month,
+                            tarih.day,
+                            12,
+                            0,
+                          );
+                          final DateTime saat15 = DateTime(
+                            tarih.year,
+                            tarih.month,
+                            tarih.day,
+                            15,
+                            0,
+                          );
+                          final String bildirimBasligi =
+                              '${yeniSoru.ders} Hatırlatması ⏰';
+                          final String bildirimGovdesi =
+                              '${yeniSoru.konu} konusundaki soruyu tekrar etme zamanı!';
+
+                          if (saat12.isAfter(now)) {
+                            await scheduleLocalNotification(
+                              notificationId:
+                                  yeniId * 10 + 1, // Benzersiz bildirim ID'si
+                              soruId:
+                                  yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
+                              title: bildirimBasligi,
+                              body: '$bildirimGovdesi (Saat 12:00)',
+                              scheduledTime: saat12,
+                              imagePath: yeniSoru.imagePath,
+                            );
+                          }
+
+                          if (saat15.isAfter(now)) {
+                            await scheduleLocalNotification(
+                              notificationId:
+                                  yeniId * 10 + 2, // Benzersiz bildirim ID'si
+                              soruId:
+                                  yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
+                              title: bildirimBasligi,
+                              body: '$bildirimGovdesi (Saat 15:00)',
+                              scheduledTime: saat15,
+                              imagePath: yeniSoru.imagePath,
+                            );
+                          }
+                          if (Platform.isAndroid) {
+                            await Permission.notification.request();
+                            await fln
+                                .resolvePlatformSpecificImplementation<
+                                  AndroidFlutterLocalNotificationsPlugin
+                                >()
+                                ?.requestExactAlarmsPermission();
+                          } else if (Platform.isIOS) {
+                            await fln
+                                .resolvePlatformSpecificImplementation<
+                                  IOSFlutterLocalNotificationsPlugin
+                                >()
+                                ?.requestPermissions(
+                                  alert: true,
+                                  badge: true,
+                                  sound: true,
+                                );
+                          }
+
+                          debugPrint(
+                            "Soru $yeniId ile kaydedildi ve bildirimler kuruldu.",
+                          );
+                        }
+                      },
+                child: soruKayitState == SoruKayitState.loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        "Kaydet",
+                        style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
                         ),
                       ),
+              ),
+            ),
+            const Gap(40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePickerArea(
+    BuildContext context,
+    File? selectedImage,
+    WidgetRef ref,
+  ) {
+    return GestureDetector(
+      onTap: () => _showImageSourceDialog(context, ref),
+      child: Container(
+        width: double.infinity,
+        height: 200,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF1F2937) // Dark mod için koyu gri
+              : const Color(0xFFF0F4F8), // Light mod için çok açık mavi/gri
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+            width: 1.5,
+            style: BorderStyle
+                .solid, // Tasarımda kesikli çizgi yok gibi ama istenirse değiştirilir
+          ),
+        ),
+        child: selectedImage != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.file(selectedImage, fit: BoxFit.cover),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate_outlined,
+                    size: 40,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                  const Gap(10),
+                  Text(
+                    "Soru Fotoğrafı Ekle",
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    onPressed: _selectDate,
-                    child: Text(
-                      selectedDate == null
-                          ? "Hatırlatıcı Tarihi Seç"
-                          : "Seçilen: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                      style: TextStyle(
-                        color: AppColors.shadow,
-                        letterSpacing: 1,
-                        fontFamily: GoogleFonts.montserrat(
-                          fontWeight: FontWeight.w900,
-                        ).fontFamily,
-                      ),
+                  ),
+                  const Gap(5),
+                  Text(
+                    "Çözemediğin sorunun fotoğrafını yükle",
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+  // --- YENİ UI WIDGETLARI ---
+
+  // Başlık Stili
+  TextStyle _sectionTitleStyle(BuildContext context) {
+    return GoogleFonts.montserrat(
+      fontWeight: FontWeight.w700,
+      fontSize: 16,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+  }
+
+  // 2. Dropdown Görünümlü Buton
+  Widget _buildDropdownStyleButton({
+    required BuildContext context,
+    required String label,
+    required String? value,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        const Gap(8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).inputDecorationTheme.fillColor,
+              borderRadius: BorderRadius.circular(25), // Rounded
+              border: Border.all(color: Colors.transparent),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    value ?? "Seçiniz",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: value == null
+                          ? Colors.grey
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-              ),
-              SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Form(
-                      key: _formKey,
-                      child: TextFormField(
-                        autofocus: false,
-                        controller: _controllerAciklama,
-                        decoration: InputDecoration(
-                          labelText: "Soru Açıklaması",
-                          fillColor: AppColors.surface,
-                          filled: true,
-                          border: OutlineInputBorder(), // M3 ile uyumlu
-                        ),
-                        maxLines: 5,
-                        minLines: 2,
-                        maxLength: 255,
-                        keyboardType: TextInputType.text, // multiline değil
-                        textInputAction: TextInputAction.done,
-                        validator: (value) {
-                          if (value != null && value.length > 255) {
-                            return "255 karakteri geçemez";
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    Gap(10),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.height * 0.3,
-                      child: FilledButton(
-                        style: ButtonStyle(
-                          backgroundColor: const WidgetStatePropertyAll(
-                            AppColors.colorSurface,
-                          ),
-                          shape: WidgetStatePropertyAll(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15.0),
-                            ),
-                          ),
-                        ),
-                        onPressed: soruKayitState == SoruKayitState.loading
-                            ? null
-                            : () async {
-                                // 1. Önce gerekli alanların dolu olup olmadığını kontrol et
-                                final secilenSoruCevap = ref.read(
-                                  soruCevabiProvider,
-                                );
-                                if (secilenDers == null ||
-                                    secilenKonu == null ||
-                                    secilenDurum == null ||
-                                    secilenSoruCevap == null ||
-                                    secilenHataNedeni == null ||
-                                    selectedImage == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "Lütfen resim dahil tüm alanları seçin!",
-                                      ),
-                                      backgroundColor: Colors.orange,
-                                    ),
-                                  );
-                                  return; // Eksik bilgi varsa işlemi durdur
-                                }
-                                if (!_formKey.currentState!.validate()) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Lütfen resim dahil tüm alanları seçin!',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                final File? selectedImage2 = ref.read(
-                                  imagePickerProvider,
-                                );
-                                if (selectedImage2 == null) return;
+                Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-                                // 2. KALICI BİR YOL OLUŞTUR VE RESMİ KOPYALA
-                                final appDir =
-                                    await getApplicationDocumentsDirectory();
-                                final fileName = p.basename(
-                                  selectedImage2.path,
-                                ); // Resmin orijinal adını alır (örn: image_picker_12345.jpg)
-                                final savedImagePath = p.join(
-                                  appDir.path,
-                                  fileName,
-                                ); // Yeni kalıcı yol (örn: .../Documents/image_picker_12345.jpg)
-
-                                // OPTİMİZASYON: Resmi kaydetmeden önce sıkıştır
-
-                                final compressedImageBytes =
-                                    await FlutterImageCompress.compressWithFile(
-                                      selectedImage2.path,
-                                      quality:
-                                          88, // Sıkıştırma kalitesini ayarla (0-100 arası)
-                                    );
-
-                                if (compressedImageBytes == null) {
-                                  return;
-                                }
-
-                                // Dosyayı geçici yoldan kalıcı yola kopyala
-                                final File savedImage = File(savedImagePath);
-                                await savedImage.writeAsBytes(
-                                  compressedImageBytes,
-                                );
-                                DateTime? selectedDate2 = selectedDate;
-
-                                // 2. Verilerden SoruModel nesnesi oluştur
-                                final yeniSoru = SoruModel(
-                                  ders: secilenDers,
-                                  konu: secilenKonu,
-                                  durum: secilenDurum,
-                                  hataNedeni: secilenHataNedeni,
-                                  soruCevap: secilenSoruCevap.name,
-                                  imagePath:
-                                      savedImage.path, // Resmin yolunu al
-                                  aciklama: _controllerAciklama.text == ""
-                                      ? "-"
-                                      : _controllerAciklama.text,
-                                  eklenmeTarihi: DateTime.now(),
-                                  hatirlaticiTarihi: selectedDate2,
-                                );
-
-                                auth.soruSayiArtir("soruSayi");
-                                AnalyticsService().trackCount(
-                                  "buttonClick",
-                                  "soru_eklendi",
-                                ); // soru sayıyor
-
-                                //**************************************************************
-
-                                //-----------------------------------------------------------
-
-                                // 3. Provider aracılığıyla veritabanına kaydet
-                                final int yeniId = await ref
-                                    .read(soruNotifierProvider.notifier)
-                                    .addSoru(yeniSoru);
-                                //print("---------------------$yeniId");
-                                //print("---------------------$selectedDate2");
-                                if (yeniId > 0 && selectedDate2 != null) {
-                                  final DateTime tarih = selectedDate2;
-                                  final now = DateTime.now();
-                                  final DateTime saat12 = DateTime(
-                                    tarih.year,
-                                    tarih.month,
-                                    tarih.day,
-                                    12,
-                                    0,
-                                  );
-                                  final DateTime saat15 = DateTime(
-                                    tarih.year,
-                                    tarih.month,
-                                    tarih.day,
-                                    15,
-                                    0,
-                                  );
-                                  final String bildirimBasligi =
-                                      '${yeniSoru.ders} Hatırlatması ⏰';
-                                  final String bildirimGovdesi =
-                                      '${yeniSoru.konu} konusundaki soruyu tekrar etme zamanı!';
-                                  debugPrint(
-                                    "Test bildirimi 5 saniye içinde gönderiliyor (ID: $yeniId)...",
-                                  );
-                                  /*await scheduleLocalNotification(
-                                    notificationId:
-                                        yeniId * 10 +
-                                        99, // Benzersiz bir test ID'si
-                                    soruId:
-                                        yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
-                                    title: '🧪 Test Bildirimi (ID: $yeniId)',
-                                    body: '${yeniSoru.konu} sorusu için test.',
-                                    scheduledTime: DateTime.now().add(
-                                      const Duration(seconds: 5),
-                                    ),
-                                    imagePath: yeniSoru
-                                        .imagePath, // Resim testini de yapar
-                                  );*/
-                                  if (saat12.isAfter(now)) {
-                                    await scheduleLocalNotification(
-                                      notificationId:
-                                          yeniId * 10 +
-                                          1, // Benzersiz bildirim ID'si
-                                      soruId:
-                                          yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
-                                      title: bildirimBasligi,
-                                      body: '$bildirimGovdesi (Saat 12:00)',
-                                      scheduledTime: saat12,
-                                      imagePath: yeniSoru.imagePath,
-                                    );
-                                  }
-
-                                  if (saat15.isAfter(now)) {
-                                    await scheduleLocalNotification(
-                                      notificationId:
-                                          yeniId * 10 +
-                                          2, // Benzersiz bildirim ID'si
-                                      soruId:
-                                          yeniId, // Tıklanınca açılacak GERÇEK soru ID'si
-                                      title: bildirimBasligi,
-                                      body: '$bildirimGovdesi (Saat 15:00)',
-                                      scheduledTime: saat15,
-                                      imagePath: yeniSoru.imagePath,
-                                    );
-                                  }
-
-                                  debugPrint(
-                                    "Soru $yeniId ile kaydedildi ve bildirimler kuruldu.",
-                                  );
-                                }
-                              },
-                        child: soruKayitState == SoruKayitState.loading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : Text(
-                                "Kaydet",
-
-                                style: TextStyle(
-                                  letterSpacing: 2,
-                                  color: AppColors.shadow,
-                                  fontFamily: GoogleFonts.montserrat(
-                                    fontWeight: FontWeight.w900,
-                                  ).fontFamily,
-                                ),
-                              ),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                  ],
+  // 3. Chip Seçim Listesi (Hata Nedeni, Durum için)
+  Widget _buildChipSelection({
+    required BuildContext context,
+    required List<String> items,
+    required String? selectedValue,
+    required Function(String) onSelected,
+  }) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: items.map((item) {
+          final bool isSelected = selectedValue == item;
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              onTap: () => onSelected(item),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF3B82F6) // Seçiliyse Mavi
+                      : Theme.of(
+                          context,
+                        ).inputDecorationTheme.fillColor, // Değilse Input rengi
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.transparent
+                        : Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Padding addSoru(File? selectedImage, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 15, right: 15, top: 10),
-      child: GestureDetector(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-
-          child: selectedImage != null
-              ? Image.file(selectedImage, fit: BoxFit.cover)
-              : Image.asset('assets/images/soru_ekle.png', fit: BoxFit.cover),
-        ),
-        onTap: () {
-          _showImageSourceDialog(context, ref);
-        },
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  SegmentedButton<OptionSoruCevabi> _soruCevabSecim() {
-    return SegmentedButton<OptionSoruCevabi>(
-      segments: <ButtonSegment<OptionSoruCevabi>>[
-        ButtonSegment(
-          value: OptionSoruCevabi.A,
-          label: Text(
-            'A',
-            style: TextStyle(
-              letterSpacing: 1,
-              fontFamily: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w900,
-              ).fontFamily,
-            ),
-          ),
-        ),
-        ButtonSegment(
-          value: OptionSoruCevabi.B,
-          label: Text(
-            'B',
-            style: TextStyle(
-              letterSpacing: 1,
-              fontFamily: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w900,
-              ).fontFamily,
-            ),
-          ),
-        ),
-        ButtonSegment(
-          value: OptionSoruCevabi.C,
-          label: Text(
-            'C',
-            style: TextStyle(
-              letterSpacing: 1,
-              fontFamily: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w900,
-              ).fontFamily,
-            ),
-          ),
-        ),
-        ButtonSegment(
-          value: OptionSoruCevabi.D,
-          label: Text(
-            'D',
-            style: TextStyle(
-              letterSpacing: 1,
-              fontFamily: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w900,
-              ).fontFamily,
-            ),
-          ),
-        ),
-        ButtonSegment(
-          value: OptionSoruCevabi.E,
-          label: Text(
-            'E',
-            style: TextStyle(
-              letterSpacing: 1,
-              fontFamily: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w900,
-              ).fontFamily,
-            ),
-          ),
-        ),
-      ],
-      selected: {
-        ref.watch(soruCevabiProvider),
-      }.whereType<OptionSoruCevabi>().toSet(),
-      onSelectionChanged: (newSelection) {
-        ref.read(soruCevabiProvider.notifier).state = newSelection.first;
-      },
-      multiSelectionEnabled: false,
-      emptySelectionAllowed: true, // <-- Add this line
-      // kapsül arka plan
-      style: ButtonStyle(
-        padding: const WidgetStatePropertyAll(
-          EdgeInsets.symmetric(horizontal: 8),
-        ),
-        backgroundColor: WidgetStateProperty.resolveWith((states) {
-          return Colors.indigo[300]; // kapsül zemin rengi
-        }),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(40), // kapsül köşe yuvarlatma
-          ),
-        ),
-        // her segment için daire
-        side: const WidgetStatePropertyAll(
-          BorderSide(color: Colors.black, width: 2),
-        ),
-        foregroundColor: WidgetStateProperty.resolveWith((states) {
-          return states.contains(WidgetState.selected)
-              ? Colors.white
-              : Colors.black;
-        }),
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-      ),
-    );
-  }
+  // 5. Doğru Cevap Seçici (Circular)
+  Widget _buildAnswerKeySelector(BuildContext context, WidgetRef ref) {
+    final options = OptionSoruCevabi.values;
+    final currentSelection = ref.watch(soruCevabiProvider);
 
-  FilledButton _secimButton(
-    BuildContext context,
-    String? secilenAT,
-    String baslik,
-    Provider filtered,
-    StateProvider query,
-    StateProvider selected,
-  ) {
-    return FilledButton(
-      style: ButtonStyle(
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-        ),
-      ),
-      onPressed: () {
-        // Dialog'u çağırıyoruz.
-
-        if (filtered == filteredKonuProvider) {
-          if (filterKonular.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Lütfen önce ders seçiniz.')),
-            );
-            return;
-          }
-        }
-
-        _secimDialog(context, filtered, query, selected);
-      },
-
-      // Butonun metnini provider'dan gelen değere göre belirliyoruz.
-      child: Text(
-        (secilenAT != null && secilenAT.length > 20)
-            ? "${secilenAT.substring(0, 20)}..."
-            : secilenAT ?? baslik,
-        style: TextStyle(
-          color: AppColors.shadow,
-          fontSize: 16,
-          letterSpacing: 1,
-          fontFamily: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w900,
-          ).fontFamily,
-        ),
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: options.map((option) {
+        final isSelected = currentSelection == option;
+        return GestureDetector(
+          onTap: () {
+            ref.read(soruCevabiProvider.notifier).state = option;
+          },
+          child: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFF3B82F6)
+                  : Theme.of(context).inputDecorationTheme.fillColor,
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(
+                16,
+              ), // Hafif kareye yakın yuvarlak
+            ),
+            child: Center(
+              child: Text(
+                option.name,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -776,95 +723,167 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     StateProvider query,
     StateProvider selected,
   ) async {
-    // Diyalogdan dönen değeri yakala
-    final String? secilen = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        // ProviderScope ile diyaloğun kendi içinde state yönetimi sağlamış oluyoruz.
-        return ProviderScope(
-          child: Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            child: Consumer(
-              builder: (context, ref, child) {
-                // Burada filtrelenmiş listeyi doğrudan provider'dan dinliyoruz.
-                final filteredOlan = ref.watch(filtered);
+    String? secilen;
 
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    // Arama çubuğu
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 8.0,
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: "Ara",
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10.0),
-                            borderSide: BorderSide.none,
+    if (Platform.isIOS) {
+      // --- iOS KISMI (AYNEN KALIYOR) ---
+      secilen = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.8,
+            maxChildSize: 0.9,
+            minChildSize: 0.5,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: ProviderScope(
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final filteredOlan = ref.watch(filtered);
+                      return Column(
+                        children: [
+                          const Gap(10),
+                          Container(
+                            width: 40,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
-                          filled: true,
-                          fillColor: Colors.grey[200],
-                        ),
-                        onChanged: (value) {
-                          // TextField'ın değeri değiştikçe provider'ı güncelliyoruz.
-                          // filteredDerslerProvider bu güncellemeyi otomatik olarak algılayıp yeniden filtreleme yapar.
-                          ref.read(query.notifier).state = value;
-                        },
-                      ),
-                    ),
-                    const Divider(height: 1),
-
-                    // Filtrelenmiş ders listesi
-                    Flexible(
-                      child: filteredOlan.isEmpty
-                          ? const Padding(
-                              padding: EdgeInsets.all(20.0),
-                              child: Text("Sonuç bulunamadı."),
-                            )
-                          : ListView.separated(
-                              shrinkWrap: true,
+                          const Gap(10),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: CupertinoSearchTextField(
+                              placeholder: "Ara",
+                              onChanged: (value) {
+                                ref.read(query.notifier).state = value;
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.separated(
+                              controller: scrollController,
                               itemCount: filteredOlan.length,
-                              separatorBuilder: (context, index) =>
+                              separatorBuilder: (c, i) =>
                                   const Divider(height: 1),
                               itemBuilder: (context, index) {
-                                final ders = filteredOlan[index];
-
+                                final item = filteredOlan[index];
                                 return ListTile(
-                                  title: Text(ders),
-                                  onTap: () {
-                                    // Seçilen dersi döndürerek diyaloğu kapatıyoruz.
-                                    Navigator.of(context).pop(ders);
-                                  },
+                                  title: Text(item),
+                                  onTap: () => Navigator.pop(context, item),
                                 );
                               },
                             ),
-                    ),
-                  ],
-                );
-              },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } else {
+      // --- ANDROID KISMI (DÜZELTİLDİ) ---
+      // Buradaki hata şuydu: Dialog içeriği ProviderScope ile düzgün sarmalanmamış veya
+      // Consumer widget'ı veriyi alamıyordu. Şimdi düzeltildi.
+      secilen = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) {
+          // Dialog'u ProviderScope ile sarmalıyoruz ki içindeki Consumer çalışabilsin
+          return ProviderScope(
+            child: Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              // Dialog'un arka plan rengi ve boyutu için child Container
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final filteredOlan = ref.watch(filtered);
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: "Ara",
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[200],
+                            ),
+                            onChanged: (value) {
+                              ref.read(query.notifier).state = value;
+                            },
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        Flexible(
+                          child: filteredOlan.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: Text("Sonuç bulunamadı."),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  itemCount: filteredOlan.length,
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(height: 1),
+                                  itemBuilder: (context, index) {
+                                    final item = filteredOlan[index];
+                                    return ListTile(
+                                      title: Text(item),
+                                      onTap: () {
+                                        Navigator.of(context).pop(item);
+                                      },
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    }
 
-    // Eğer bir ders seçildiyse (dialog null dönmediyse)
+    // --- ORTAK İŞLEMLER (Seçilen Değeri Atama) ---
     if (secilen != null) {
-      // provider'ın değerini güncelliyoruz.
       ref.read(selected.notifier).state = secilen;
-      if (filtered == filteredDerslerProvider) {
+      // Sadece Ders filtresiyse, konuyu da buna göre filtrele
+      // NOT: filteredDerslerProvider'a erişmek için ref.read kullanamayız (burası async bir fonksiyon).
+      // Bu yüzden if kontrolünü provider'ın kendisine göre değil, mantığına göre yapıyoruz.
+
+      // Eğer seçilen provider 'selectedDersProvider' ise (yani ders seçildiyse)
+      if (selected == selectedDersProvider) {
+        final dersler = ref.read(dersListProvider); // Ders listesini al
         int konununNetlesmesi = dersler.indexOf(secilen);
         setFilterKonBasedOnX(konununNetlesmesi);
       }
     }
-
-    // Diyalog kapandığında arama sorgusunu sıfırla.
     ref.read(query.notifier).state = '';
   }
 
@@ -872,158 +891,75 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
     BuildContext context,
     WidgetRef ref,
   ) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
+    if (Platform.isIOS) {
+      // --- iOS KISMI (YENİ) ---
+      await showCupertinoModalPopup(
+        context: context,
+        builder: (context) => CupertinoActionSheet(
           title: const Text('Resim Kaynağını Seçin'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Galeriden Seç'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  ref.read(imagePickerProvider.notifier).pickImageFromGallery();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Kameradan Çek'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  ref.read(imagePickerProvider.notifier).pickImageFromCamera();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _handleSelectedImage(File file) async {
-    ref.read(ocrProcessingProvider.notifier).state = true;
-
-    try {
-      final text = await ref.read(ocrServiceProvider).recognizeFromFile(file);
-      ref.read(ocrResultProvider.notifier).state = text;
-    } catch (e) {
-      ref.read(ocrResultProvider.notifier).state = null;
-    } finally {
-      //buraya girmeden gemini kısmına git ki herşey netleşene kadar
-      //anmasyon dönsün
-      /*await getGeminiAnalysis(); // fonksiyonun adı örnek
-      final raw = ref.watch(geminiResultProvider) ?? '';
-      final reg = RegExp(
-        r'ders:\s*(.*?),\s*konu:\s*(.*)$',
-        dotAll: true, // \n dahil et
-      );
-      final match = reg.firstMatch(raw);
-      dersAi = match?.group(1)?.trim() ?? '';
-      konuAi = match?.group(2)?.trim() ?? '';
-      ref.read(selectedDersProvider.notifier).state = dersAi;
-      ref.read(selectedKonuProvider.notifier).state = konuAi;
-
-      ref.read(ocrProcessingProvider.notifier).state = false;*/
-    }
-  }
-
-  // The getGeminiAnalysis() function to be implemented
-
-  Future<Map<String, String>> getGeminiAnalysis() async {
-    final text = ref.read(ocrResultProvider);
-    if (text == null || text.isEmpty) {
-      return {'ders': '', 'konu': ''};
-    }
-
-    try {
-      final response = await _gemini.prompt(
-        parts: [
-          Part.text(
-            "Aşağıdaki soru hangi derse aittir? Sadece '<Ders Adı>' formatında cevap ver ve başka hiçbir şey ekleme: \n\n$text",
-          ),
-        ],
-      );
-
-      String? responseText;
-      if (response != null &&
-          response.content != null &&
-          response.content!.parts != null) {
-        // Use a simple for loop to find the TextPart, which avoids
-        // the type issues of firstWhere.
-        for (var part in response.content!.parts!) {
-          if (part is TextPart) {
-            responseText = part.text;
-            break; // Stop iterating once the text is found
-          }
-        }
-
-        String ders = responseText!.trim().toLowerCase();
-
-        // Listedeki elemanlarla karşılaştır ve eşleşen ilkini bul.
-        final String bulunanDers = dkonuListeleri.firstWhere(
-          (dersInList) => dersInList.toLowerCase() == ders,
-          orElse: () => "null", // Eğer eşleşme yoksa `null` döner.
-        );
-
-        final List<String> dersinKonulari = konuListeleri[bulunanDers] ?? [];
-
-        if (dersinKonulari.isEmpty) {
-          return {'ders': ders, 'konu': 'Bilinmiyor'};
-        }
-        final responseKonu = await _gemini.prompt(
-          parts: [
-            Part.text(
-              "Aşağıdaki soru hangi ${dersinKonulari.join(', ')} konuya aittir? Sadece '<Konu Adı>' formatında cevap ver ve başka hiçbir şey ekleme ve listeden bir en yakın konuyu seçmeye çalışarak enazından cevap ver: \n\n$text",
+          actions: [
+            CupertinoActionSheetAction(
+              child: const Text('Galeriden Seç'),
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(imagePickerProvider.notifier).pickImageFromGallery();
+              },
+            ),
+            CupertinoActionSheetAction(
+              child: const Text('Kameradan Çek'),
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(imagePickerProvider.notifier).pickImageFromCamera();
+              },
             ),
           ],
-        );
-        String? responseTextKonu;
-        if (responseKonu != null &&
-            responseKonu.content != null &&
-            responseKonu.content!.parts != null) {
-          // Use a simple for loop to find the TextPart, which avoids
-          // the type issues of firstWhere.
-          for (var part in responseKonu.content!.parts!) {
-            if (part is TextPart) {
-              responseTextKonu = part.text;
-              break; // Stop iterating once the text is found
-            }
-          }
-          ref.read(geminiResultProvider.notifier).state =
-              "ders: ${responseText.toString()},konu: ${responseTextKonu.toString()}";
-          return {
-            'ders': responseText.toString(),
-            'konu': responseTextKonu.toString(),
-          };
-        }
-      }
-      // ignore: unused_catch_clause
-    } on GeminiException catch (e) {
-      print('Gemini API hatası: ${e.message}');
-
-      if (!mounted) return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Sunucuya erişilemiyor. Lütfen daha sonra tekrar deneyin.",
+          cancelButton: CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            child: const Text('İptal'),
+            onPressed: () => Navigator.pop(context),
           ),
         ),
       );
-    } catch (e) {
-      print('Bilinmeyen hata: $e');
-      if (!mounted) return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
-          ),
-        ),
+    } else {
+      // --- ANDROID KISMI (MEVCUT KOD) ---
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Resim Kaynağını Seçin'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Galeriden Seç'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    ref
+                        .read(imagePickerProvider.notifier)
+                        .pickImageFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Kameradan Çek'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    ref
+                        .read(imagePickerProvider.notifier)
+                        .pickImageFromCamera();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
       );
     }
+  }
 
-    return {'ders': 'Bilinmiyor', 'konu': 'Bilinmiyor'};
+  Future<bool> _hasConnection() async {
+    final results = await Connectivity().checkConnectivity();
+    return results.any((r) => r != ConnectivityResult.none);
   }
 }

@@ -14,62 +14,88 @@ class ImagePickerNotifier extends StateNotifier<File?> {
   // Başlangıç durumunu null olarak ayarlıyoruz.
   ImagePickerNotifier() : super(null);
 
-  File? _image;
+  //File? _image;
 
   final ImagePicker _picker = ImagePicker();
 
   // Galeriden resim seçme metodu
   Future<void> pickImageFromGallery() async {
-    // Fotoğraf galerisi iznini istiyoruz
-    PermissionStatus status;
-    if (Platform.isAndroid) {
-      // Android 13+ için
-      status = await Permission.photos.request();
-      // Android 12 ve altı fallback
-      if (!status.isGranted) {
-        status = await Permission.storage.request();
-      }
-    } else {
-      status = await Permission.photos.request();
-    }
+    bool hasPermission = false;
 
-    if (status.isGranted) {
-      //print("İzin verildi, galeri açılıyor...");
+    // 1. Platforma Göre İzin Kontrolü
+    if (Platform.isAndroid) {
+      // Android 13+ (SDK 33) için 'photos', eskiler için 'storage'
+      // permission_handler bunu genellikle otomatik yönetir ama manuel kontrol ekledik
+      final statusPhotos = await Permission.photos.status;
+
+      if (statusPhotos.isGranted || statusPhotos.isLimited) {
+        hasPermission = true;
+      } else {
+        // İzin yoksa iste
+        final requestPhotos = await Permission.photos.request();
+        if (requestPhotos.isGranted || requestPhotos.isLimited) {
+          hasPermission = true;
+        } else {
+          // Android 12 ve altı için Storage denemesi
+          final statusStorage = await Permission.storage.request();
+          if (statusStorage.isGranted) {
+            hasPermission = true;
+          }
+        }
+      }
+
+      if (!hasPermission) {
+        // İzin verilmediyse ayarlara yönlendir
+        await openAppSettings();
+        return;
+      }
+    }
+    // İYİLEŞTİRME: iOS için izin sormuyoruz.
+    // image_picker, iOS'te sistem seçicisini açar ve kullanıcı sadece seçtiği
+    // fotoğrafı uygulamaya verir. Ekstra "Tüm galeriye eriş" iznine gerek yoktur.
+
+    // 2. Resmi Seç
+    try {
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
+        imageQuality: 80, // Performans için kalite optimizasyonu
       );
 
       if (pickedFile != null) {
         state = File(pickedFile.path);
-      } else {
-        //print("Galeriden resim seçilmedi.");
       }
-    } else if (status.isDenied) {
-      //print("Galeri erişim izni reddedildi.");
-      // Burada kullanıcıya neden izne ihtiyacınız olduğunu anlatan bir uyarı gösterebilirsiniz.
-    } else if (status.isPermanentlyDenied) {
-      openAppSettings();
-      // Kullanıcıyı uygulama ayarlarına yönlendirebilirsiniz.
-      // Örneğin: openAppSettings(); (permission_handler paketinden gelir)
+    } catch (e) {
+      // Hata durumunda (örneğin iOS'te kullanıcı iptal ederse veya kısıtlama varsa)
+      // print("Resim seçme hatası: $e");
     }
   }
 
-  // Kameradan resim çekme metodu
+  // --- KAMERADAN ÇEKME ---
   Future<void> pickImageFromCamera() async {
-    // Kamera iznini istiyoruz
-    final status = await Permission.camera.request();
+    // Kamera için her iki platformda da izin şarttır
+    var status = await Permission.camera.status;
+
+    if (!status.isGranted) {
+      status = await Permission.camera.request();
+    }
 
     if (status.isGranted) {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.camera,
-      );
+      try {
+        final XFile? pickedFile = await _picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 80,
+          requestFullMetadata: false, // <--- BU SATIRI EKLEYİN (Sorunu Çözer)
+        );
 
-      if (pickedFile != null) {
-        state = File(pickedFile.path); // Çekilen resmi state'e atıyoruz.
+        if (pickedFile != null) {
+          state = File(pickedFile.path);
+        }
+      } catch (e) {
+        // print("Kamera hatası: $e");
       }
-    } else {
-      // Kullanıcı izni reddederse burada bir uyarı gösterebilirsiniz.
-      //print('Kamera erişim izni reddedildi.');
+    } else if (status.isPermanentlyDenied) {
+      // Kullanıcı kalıcı olarak reddettiyse ayarlara yolla
+      await openAppSettings();
     }
   }
 

@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.1.0+19 #MAJOR.MINOR.PATCH
+version: 1.3.4+25 #MAJOR.MINOR.PATCH
 
 environment:
   sdk: ^3.9.0
@@ -49,8 +49,14 @@ dependencies:
   connectivity_plus: ^7.0.0
   intl: ^0.20.2
   flutter_drawing_board: ^0.9.8
-  share_plus: ^12.0.0
+  share_plus: ^12.0.1
   timezone: ^0.10.1
+  webview_flutter: ^4.13.0
+  showcaseview: ^5.0.1
+  shared_preferences: ^2.5.3
+  google_mobile_ads: ^6.0.0
+  tutorial_coach_mark: ^1.3.3
+  app_tracking_transparency: ^2.0.6+1
 
 dev_dependencies:
   flutter_test:
@@ -91,7 +97,7 @@ flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/icon/icon.png"
-  adaptive_icon_background: "#5550af"
+  adaptive_icon_background: "#0B151F"
   adaptive_icon_foreground: "assets/icon/icon.png"
   adaptive_icon_foreground_inset: 24
   min_sdk_android: 21 # android min sdk min:16, default 21

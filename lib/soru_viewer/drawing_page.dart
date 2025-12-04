@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_drawing_board/flutter_drawing_board.dart';
 import 'package:flutter_drawing_board/paint_contents.dart';
@@ -51,22 +52,40 @@ class _DrawingPageState extends State<DrawingPage> {
     setState(() => _stroke = width);
   }
 
+  // --- PLATFORM İKONLARI İÇİN YARDIMCI METODLAR ---
+  IconData get _undoIcon =>
+      Platform.isIOS ? CupertinoIcons.arrow_turn_up_left : Icons.undo;
+  IconData get _redoIcon =>
+      Platform.isIOS ? CupertinoIcons.arrow_turn_up_right : Icons.redo;
+  IconData get _deleteIcon =>
+      Platform.isIOS ? CupertinoIcons.trash : Icons.delete_forever;
+  IconData get _brushIcon =>
+      Platform.isIOS ? CupertinoIcons.paintbrush : Icons.brush;
+  IconData get _eraserIcon => Platform.isIOS
+      ? CupertinoIcons.xmark_circle
+      : Icons.cleaning_services_outlined;
+  // Şekiller için Material ikonları evrenseldir, değiştirmeye gerek yoktur.
+  IconData get _lineIcon => Icons.horizontal_rule;
+  IconData get _rectIcon => Icons.crop_square;
+  IconData get _circleIcon => Icons.circle_outlined;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Çözüm Çizimi'),
+        centerTitle: true, // iOS standardı
         actions: [
           IconButton(
-            icon: const Icon(Icons.undo),
+            icon: Icon(_undoIcon),
             onPressed: _controller.canUndo() ? () => _controller.undo() : null,
           ),
           IconButton(
-            icon: const Icon(Icons.redo),
+            icon: Icon(_redoIcon),
             onPressed: _controller.canRedo() ? () => _controller.redo() : null,
           ),
           IconButton(
-            icon: const Icon(Icons.delete_forever),
+            icon: Icon(_deleteIcon),
             onPressed: () => _controller.clear(),
           ),
           //IconButton(icon: const Icon(Icons.share), onPressed: _shareImage),
@@ -78,18 +97,34 @@ class _DrawingPageState extends State<DrawingPage> {
             color: Theme.of(context).scaffoldBackgroundColor,
             child: Row(
               children: [
-                const Icon(Icons.line_weight),
+                Icon(
+                  Platform.isIOS ? CupertinoIcons.scribble : Icons.line_weight,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Slider(
-                    min: 2,
-                    max: 30,
-                    value: _stroke,
-                    onChanged: (v) {
-                      setState(() => _stroke = v);
-                      _controller.setStyle(strokeWidth: v);
-                    },
-                  ),
+                  // İYİLEŞTİRME: Platforma Duyarlı Slider
+                  child: Platform.isIOS
+                      ? CupertinoSlider(
+                          min: 2,
+                          max: 30,
+                          value: _stroke,
+                          activeColor: _color,
+                          onChanged: (v) {
+                            setState(() => _stroke = v);
+                            _controller.setStyle(strokeWidth: v);
+                          },
+                        )
+                      : Slider(
+                          min: 2,
+                          max: 30,
+                          value: _stroke,
+                          activeColor: _color,
+                          onChanged: (v) {
+                            setState(() => _stroke = v);
+                            _controller.setStyle(strokeWidth: v);
+                          },
+                        ),
                 ),
               ],
             ),
@@ -141,25 +176,25 @@ class _DrawingPageState extends State<DrawingPage> {
             children: [
               IconButton(
                 tooltip: 'Kırmızı kalem',
-                icon: Icon(Icons.brush, color: Colors.red),
+                icon: Icon(_brushIcon, color: Colors.red),
                 isSelected: !_isEraser && _color == Colors.red,
                 onPressed: () => _setPen(Colors.red, _stroke),
               ),
               IconButton(
                 tooltip: 'Mavi kalem',
-                icon: Icon(Icons.brush, color: Colors.blue),
+                icon: Icon(_brushIcon, color: Colors.blue),
                 isSelected: !_isEraser && _color == Colors.blue,
                 onPressed: () => _setPen(Colors.blue, _stroke),
               ),
               IconButton(
                 tooltip: 'Siyah kalem',
-                icon: Icon(Icons.brush, color: Colors.black),
+                icon: Icon(_brushIcon, color: Colors.black),
                 isSelected: !_isEraser && _color == Colors.black,
                 onPressed: () => _setPen(Colors.black, _stroke),
               ),
               IconButton(
                 tooltip: 'Çizgi',
-                icon: const Icon(Icons.horizontal_rule),
+                icon: Icon(_lineIcon),
                 onPressed: () {
                   _isEraser = false;
                   _controller.setPaintContent(StraightLine());
@@ -168,7 +203,7 @@ class _DrawingPageState extends State<DrawingPage> {
               ),
               IconButton(
                 tooltip: 'Dikdörtgen',
-                icon: const Icon(Icons.crop_square),
+                icon: Icon(_rectIcon),
                 onPressed: () {
                   _isEraser = false;
                   _controller.setPaintContent(Rectangle());
@@ -177,7 +212,7 @@ class _DrawingPageState extends State<DrawingPage> {
               ),
               IconButton(
                 tooltip: 'Çember',
-                icon: const Icon(Icons.circle_outlined),
+                icon: Icon(_circleIcon),
                 onPressed: () {
                   _isEraser = false;
                   _controller.setPaintContent(Circle());
@@ -187,7 +222,7 @@ class _DrawingPageState extends State<DrawingPage> {
               const VerticalDivider(width: 24),
               IconButton(
                 tooltip: 'Silgi',
-                icon: const Icon(Icons.cleaning_services_outlined),
+                icon: Icon(_eraserIcon),
                 isSelected: _isEraser,
                 onPressed: () => _setEraser(_stroke),
               ),

@@ -140,7 +140,7 @@ List<String> konuListKimya = [
 
 List<String> konuListBiyoloji = [
   "Canlıların Ortak Özellikleri",
-  "Canlıların Temek Bileşenleri",
+  "Canlıların Temel Bileşenleri",
   "Hücre ve Organelleri",
   "Madde Geçişleri",
   "Canlıların Sınıflandırılması",
@@ -159,7 +159,7 @@ List<String> konuListBiyoloji = [
   "Boşaltım Sistemi",
   "Üriner Sistem",
   "Üreme Sistemi ve Embriyonik Gelişim",
-  "Kominite ve Popülasyon Ekolojisi",
+  "Komünite ve Popülasyon Ekolojisi",
   "Mükleik Asitler",
   "Genetik Şifre",
   "Protein Sentezi",
@@ -182,7 +182,7 @@ List<String> konuListDin = [
 ];
 
 List<String> konuListFelsefe = [
-  "Felsefe Alani",
+  "Felsefe Alanı",
   "Bilgi Felsefesi",
   "Bilim Felsefesi",
   "Varlık Felsefesi",
@@ -319,7 +319,7 @@ final Map<String, List<String>> konuListeleri = {
     "Üçgende Açılar",
     "Özel Üçgenler",
     "Açıortay",
-    "KenarOrtay",
+    "Kenarortay",
     "Üçgende Alan",
     "Üçgende Benzerlik",
     "Açı Kenar Bağıntıları",
@@ -392,7 +392,7 @@ final Map<String, List<String>> konuListeleri = {
   ],
   'Biyoloji': [
     "Canlıların Ortak Özellikleri",
-    "Canlıların Temek Bileşenleri",
+    "Canlıların Temel Bileşenleri",
     "Hücre ve Organelleri",
     "Madde Geçişleri",
     "Canlıların Sınıflandırılması",
@@ -412,7 +412,7 @@ final Map<String, List<String>> konuListeleri = {
     "Üriner Sistem",
     "Üreme Sistemi ve Embriyonik Gelişim",
     "Kominite ve Popülasyon Ekolojisi",
-    "Mükleik Asitler",
+    "Nükleik Asitler",
     "Genetik Şifre",
     "Protein Sentezi",
     "Canlılık ve Enerji",
@@ -442,7 +442,7 @@ final Map<String, List<String>> konuListeleri = {
     "Sanat Felsefesi",
   ],
   'Coğrafya': [
-    "Doğa ve insan",
+    "Doğa ve İnsan",
     "Dünya Şekli Hareketleri",
     "Coğrafi Konum",
     "Harita Bilgisi",
