@@ -582,12 +582,10 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
                 try {
                   await _saveAYT();
                 } catch (e) {
-                  print("Hata oluştu, veritabanı sıfırlanıyor: $e");
-
                   // 1. Veritabanını sil
                   await DenemeDatabaseHelper.instance.nukeDatabase();
 
-                  if (context.mounted) {
+                  if (mounted) {
                     // 2. Kullanıcıya bilgi ver
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -627,7 +625,8 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
 
   Widget _buildHeaderInput(bool isDark, Color textColor) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      // Dış kutunun iç boşluğunu biraz artırdım (Daha ferah durması için)
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -641,37 +640,67 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
       ),
       child: Column(
         children: [
+          // --- DENEME ADI GİRİŞİ ---
           TextField(
             controller: _denemeAdiController,
-            style: TextStyle(color: textColor),
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 18, // Yazı boyutu büyütüldü
+            ),
             decoration: InputDecoration(
               hintText: "Deneme Adı (Örn: X TYT TG 1)",
-              hintStyle: TextStyle(color: Colors.grey[500]),
+              hintStyle: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 16, // Hint yazısı da büyütüldü
+                fontWeight: FontWeight.normal,
+              ),
+
+              // SADECE GRİ FONU KAPATIYORUZ, BOYUTU KISITLAMIYORUZ
+              filled: false,
+
+              // isDense ve contentPadding kaldırıldı -> Alan genişledi
               border: InputBorder.none,
-              // 'icon' yerine 'prefixIcon' kullanın
-              prefixIcon: const Icon(Icons.edit_note, color: Colors.blueAccent),
-              // İsterseniz ikonu daha da sola yapıştırmak için constraint ekleyebilirsiniz:
-              prefixIconConstraints: BoxConstraints(minWidth: 10),
+              focusedBorder: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+
+              // İkon
+              prefixIcon: const Icon(
+                Icons.edit_note,
+                color: Colors.blueAccent,
+                size: 28,
+              ),
             ),
           ),
-          const Divider(),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: 16.0,
+            ), // Çizgi ile yazı arası açıldı
+            child: Divider(height: 1),
+          ),
+
+          // --- TARİH SEÇİCİ ---
           GestureDetector(
             onTap: () => _selectDate(context),
             child: Row(
               children: [
-                // İKON DEĞİŞİMİ: Takvim
                 Icon(
                   Platform.isIOS
                       ? CupertinoIcons.calendar
                       : Icons.calendar_month,
                   color: Colors.blueAccent,
+                  size: 24,
                 ),
-                const Gap(10),
+                const Gap(12),
                 Text(
                   DateFormat('dd MMMM yyyy', 'tr_TR').format(_selectedDate),
                   style: TextStyle(
                     color: textColor,
                     fontWeight: FontWeight.w600,
+                    fontSize: 16, // Tarih yazısı büyütüldü
                   ),
                 ),
                 const Spacer(),
@@ -738,13 +767,14 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     bool isDark,
   ) {
     return Container(
-      height: 50, // Yüksekliği artırdık, sıkışıklık gitti
-      alignment: Alignment.center, // İçeriği ortalar
+      height: 50,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
+        // Arka plan rengini (Karanlık/Aydınlık) buraya veriyoruz
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withValues(alpha: 0.6), // Çerçeve rengi belirginleşti
+          color: color.withValues(alpha: 0.6), // Çerçeve Rengi (Yeşil/Kırmızı)
           width: 1.5,
         ),
         boxShadow: [
@@ -755,18 +785,18 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
           ),
         ],
       ),
-      // TextField'ı Center ile sarmaladık ki kayma yapmasın
       child: Center(
         child: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          textAlign: TextAlign.center, // Yatayda ortalar
-          textAlignVertical: TextAlignVertical.center, // Dikeyde ortalar
+          textAlign: TextAlign.center,
+          textAlignVertical: TextAlignVertical.center,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 18, // Rakamları biraz büyüttük, daha şık durur
+            fontSize: 18,
             color: isDark ? Colors.white : Colors.black87,
           ),
+          // --- İŞTE BURASI DÜZELTİYOR ---
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -774,10 +804,15 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
-            border: InputBorder.none, // Alt çizgiyi kaldırdık
-            isDense: true, // Sıkıştırılmış mod
-            contentPadding:
-                EdgeInsets.zero, // Padding'i sıfırladık, Center halledecek
+            // İçerdeki tüm çizgileri ve dolguları kapatıyoruz:
+            filled: false, // Arka plan dolgusunu kapatır (Gri kutuyu siler)
+            border: InputBorder.none, // Alt çizgiyi siler
+            focusedBorder: InputBorder.none, // Tıklanınca çıkan çizgiyi siler
+            enabledBorder: InputBorder.none, // Normal çizgiyi siler
+            errorBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.zero, // İç boşluğu sıfırlar
           ),
         ),
       ),

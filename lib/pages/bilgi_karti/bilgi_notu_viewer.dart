@@ -514,9 +514,21 @@ class BilgiNotuViewer extends ConsumerWidget {
                           maxLines: 4,
                           minLines: 2,
                           style: GoogleFonts.inter(fontSize: 14),
-                          decoration: InputDecoration.collapsed(
+                          decoration: InputDecoration(
                             hintText: "Buraya notlarını ekleyebilirsin...",
                             hintStyle: TextStyle(color: Colors.grey.shade500),
+                            border: InputBorder.none,
+                            filled: false, // Arka plan gri dolgusunu kapatır
+
+                            focusedBorder: InputBorder
+                                .none, // Tıklanınca çıkan çizgiyi siler
+                            enabledBorder: InputBorder
+                                .none, // Normal durumdaki çizgiyi siler
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ), // Yazıyı hizalamak için
+                            // --- İstediğiniz şeffaflık ve boşluk ayarları ---
                           ),
                         ),
                       ),

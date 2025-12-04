@@ -651,10 +651,21 @@ class SoruViewer extends ConsumerWidget {
                           maxLines: 4,
                           minLines: 2,
                           style: GoogleFonts.inter(fontSize: 14),
-                          decoration: InputDecoration.collapsed(
+                          decoration: InputDecoration(
                             hintText:
                                 "Sorunun çözümüne dair kendi notlarını buraya yaz...",
                             hintStyle: TextStyle(color: Colors.grey.shade500),
+                            border: InputBorder.none,
+                            filled: false, // Arka plan gri dolgusunu kapatır
+
+                            focusedBorder: InputBorder
+                                .none, // Tıklanınca çıkan çizgiyi siler
+                            enabledBorder: InputBorder
+                                .none, // Normal durumdaki çizgiyi siler
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
                           ),
                         ),
                       ),

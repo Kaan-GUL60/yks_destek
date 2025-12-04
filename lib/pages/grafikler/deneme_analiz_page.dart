@@ -1,6 +1,6 @@
-import 'dart:io'; // Platform kontrolü
+import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/cupertino.dart'; // iOS widget'ları
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_analiz_provider.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_ekle_page.dart';
 
+// --- ANA SAYFA ---
 class DenemeAnalizPage extends ConsumerWidget {
   const DenemeAnalizPage({super.key});
 
@@ -30,7 +31,6 @@ class DenemeAnalizPage extends ConsumerWidget {
         backgroundColor: bgColor,
         elevation: 0,
         actions: [
-          // Ekleme Butonu (Sağ Üst)
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
@@ -39,8 +39,6 @@ class DenemeAnalizPage extends ConsumerWidget {
                   context,
                   MaterialPageRoute(builder: (_) => const DenemeEklePage()),
                 ).then((_) {
-                  // Geri dönüldüğünde verileri yenile
-                  // DÜZELTME: Sayfa hala açık mı kontrol et
                   if (context.mounted) {
                     ref.invalidate(tytListProvider);
                     ref.invalidate(aytListProvider);
@@ -53,7 +51,6 @@ class DenemeAnalizPage extends ConsumerWidget {
                   color: primaryColor,
                   shape: BoxShape.circle,
                 ),
-                // İYİLEŞTİRME 1: Platforma Duyarlı İkon
                 child: Icon(
                   Platform.isIOS ? CupertinoIcons.add : Icons.add,
                   color: Colors.white,
@@ -64,17 +61,12 @@ class DenemeAnalizPage extends ConsumerWidget {
           ),
         ],
       ),
-      // İYİLEŞTİRME 2: SafeArea
       body: SafeArea(
         child: Column(
           children: [
             const Gap(10),
-            // 1. TOGGLE BUTONU (TYT / AYT)
             _buildCustomToggle(ref, selectedTab, primaryColor, isDark),
-
             const Gap(20),
-
-            // 2. İÇERİK (GRAFİK + LİSTE)
             Expanded(
               child: selectedTab == 0
                   ? const _TytAnalizView()
@@ -86,7 +78,6 @@ class DenemeAnalizPage extends ConsumerWidget {
     );
   }
 
-  // Özel Toggle Tasarımı (Korundu)
   Widget _buildCustomToggle(
     WidgetRef ref,
     int selectedTab,
@@ -161,7 +152,6 @@ class _TytAnalizView extends ConsumerWidget {
     final tytListAsync = ref.watch(tytListProvider);
 
     return tytListAsync.when(
-      // İYİLEŞTİRME 3: Platforma Duyarlı Loading
       loading: () => Center(
         child: Platform.isIOS
             ? const CupertinoActivityIndicator()
@@ -173,35 +163,88 @@ class _TytAnalizView extends ConsumerWidget {
           return const Center(child: Text("Henüz TYT denemesi eklenmedi."));
         }
 
-        // Netleri hesapla ve listeye ekle
-        final List<double> netler = denemeler
-            .map((d) => hesaplaTytNet(d))
+        // --- Veri Hazırlama ---
+        final overallSpots = denemeler
+            .asMap()
+            .entries
+            .map((e) => FlSpot(e.key.toDouble(), hesaplaTytNet(e.value)))
             .toList();
-        final double sonNet = netler.last;
-        final double ortalama = netler.reduce((a, b) => a + b) / netler.length;
+        final trSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) => FlSpot(
+                e.key.toDouble(),
+                e.value.turkceD - (e.value.turkceY / 4.0),
+              ),
+            )
+            .toList();
+        final matSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.matD - (e.value.matY / 4.0)),
+            )
+            .toList();
+        final sosSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) => FlSpot(
+                e.key.toDouble(),
+                e.value.sosyalD - (e.value.sosyalY / 4.0),
+              ),
+            )
+            .toList();
+        final fenSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.fenD - (e.value.fenY / 4.0)),
+            )
+            .toList();
 
-        // Grafik için veri hazırla
-        final List<FlSpot> spots = [];
-        for (int i = 0; i < netler.length; i++) {
-          spots.add(FlSpot(i.toDouble(), netler[i]));
-        }
+        final chartDataList = [
+          _ChartData(
+            title: "TYT Genel Net",
+            spots: overallSpots,
+            color: const Color(0xFF8B5CF6),
+          ),
+          _ChartData(
+            title: "Türkçe Net",
+            spots: trSpots,
+            color: Colors.redAccent,
+          ),
+          _ChartData(
+            title: "Matematik Net",
+            spots: matSpots,
+            color: Colors.blueAccent,
+          ),
+          _ChartData(
+            title: "Sosyal Net",
+            spots: sosSpots,
+            color: Colors.orangeAccent,
+          ),
+          _ChartData(
+            title: "Fen Net",
+            spots: fenSpots,
+            color: Colors.greenAccent,
+          ),
+        ];
 
         return ListView(
-          // İYİLEŞTİRME 4: iOS Esneme Efekti
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
-            // GRAFİK KARTI
-            _ChartCard(
-              title: "TYT Net Grafiği",
-              currentNet: sonNet,
-              average: ortalama,
-              spots: spots,
-              isTyt: true,
+            // Grafik Alanı (Yüksekliği Artırıldı)
+            SizedBox(
+              height: 380, // 320'den 380'e çıkarıldı
+              child: _SwipeableCharts(chartDataList: chartDataList),
             ),
-            const Gap(24),
 
-            // SON DENEMELER BAŞLIĞI
+            const Gap(24),
             Text(
               "Son Denemeler",
               style: GoogleFonts.montserrat(
@@ -210,16 +253,24 @@ class _TytAnalizView extends ConsumerWidget {
               ),
             ),
             const Gap(12),
-
-            // LİSTE
             ...denemeler.reversed.map((deneme) {
               final net = hesaplaTytNet(deneme);
-              return _DenemeListItem(
-                ad: deneme.denemeAdi,
-                tarih: deneme.tarih,
-                net: net,
-                detay:
-                    "TR: ${deneme.turkceD}-${deneme.turkceY} | Mat: ${deneme.matD}-${deneme.matY}",
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          _DenemeDetailPage(deneme: deneme, isTyt: true),
+                    ),
+                  );
+                },
+                child: _DenemeListItem(
+                  ad: deneme.denemeAdi,
+                  tarih: deneme.tarih,
+                  net: net,
+                  detay: "",
+                ),
               );
             }),
             const Gap(30),
@@ -231,6 +282,7 @@ class _TytAnalizView extends ConsumerWidget {
 }
 
 // --- AYT GÖRÜNÜMÜ ---
+// --- AYT GÖRÜNÜMÜ (GÜNCELLENDİ: Tüm Dersler Ayrı Ayrı) ---
 class _AytAnalizView extends ConsumerWidget {
   const _AytAnalizView();
 
@@ -239,7 +291,6 @@ class _AytAnalizView extends ConsumerWidget {
     final aytListAsync = ref.watch(aytListProvider);
 
     return aytListAsync.when(
-      // İYİLEŞTİRME 3: Platforma Duyarlı Loading
       loading: () => Center(
         child: Platform.isIOS
             ? const CupertinoActivityIndicator()
@@ -251,29 +302,200 @@ class _AytAnalizView extends ConsumerWidget {
           return const Center(child: Text("Henüz AYT denemesi eklenmedi."));
         }
 
-        final List<double> netler = denemeler
-            .map((d) => hesaplaAytNet(d))
-            .toList();
-        final double sonNet = netler.last;
-        final double ortalama = netler.reduce((a, b) => a + b) / netler.length;
+        // --- Veri Hazırlama (Her Ders Ayrı Ayrı) ---
 
-        final List<FlSpot> spots = [];
-        for (int i = 0; i < netler.length; i++) {
-          spots.add(FlSpot(i.toDouble(), netler[i]));
-        }
+        // 1. Genel Net
+        final overallSpots = denemeler
+            .asMap()
+            .entries
+            .map((e) => FlSpot(e.key.toDouble(), hesaplaAytNet(e.value)))
+            .toList();
+
+        // 2. Matematik
+        final matSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.matD - (e.value.matY / 4.0)),
+            )
+            .toList();
+
+        // 3. Fen Dersleri (Ayrı Ayrı)
+        final fizSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.fizD - (e.value.fizY / 4.0)),
+            )
+            .toList();
+        final kimSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.kimD - (e.value.kimY / 4.0)),
+            )
+            .toList();
+        final biySpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.biyD - (e.value.biyY / 4.0)),
+            )
+            .toList();
+
+        // 4. Eşit Ağırlık / Sözel Ortak Dersleri (Ayrı Ayrı)
+        final edbSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.edbD - (e.value.edbY / 4.0)),
+            )
+            .toList();
+        final tar1Spots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) => FlSpot(
+                e.key.toDouble(),
+                e.value.tar1D - (e.value.tar1Y / 4.0),
+              ),
+            )
+            .toList();
+        final cog1Spots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) => FlSpot(
+                e.key.toDouble(),
+                e.value.cog1D - (e.value.cog1Y / 4.0),
+              ),
+            )
+            .toList();
+
+        // 5. Sözel Dersleri (Ayrı Ayrı)
+        final tar2Spots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) => FlSpot(
+                e.key.toDouble(),
+                e.value.tar2D - (e.value.tar2Y / 4.0),
+              ),
+            )
+            .toList();
+        final cog2Spots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) => FlSpot(
+                e.key.toDouble(),
+                e.value.cog2D - (e.value.cog2Y / 4.0),
+              ),
+            )
+            .toList();
+        final felSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.felD - (e.value.felY / 4.0)),
+            )
+            .toList();
+        final dinSpots = denemeler
+            .asMap()
+            .entries
+            .map(
+              (e) =>
+                  FlSpot(e.key.toDouble(), e.value.dinD - (e.value.dinY / 4.0)),
+            )
+            .toList();
+
+        // Grafik Listesini Oluşturma
+        final chartDataList = [
+          // Ana Grafikler
+          _ChartData(
+            title: "AYT Genel Net",
+            spots: overallSpots,
+            color: const Color(0xFF8B5CF6),
+          ),
+          _ChartData(
+            title: "Matematik Net",
+            spots: matSpots,
+            color: Colors.blueAccent,
+          ),
+
+          // Fen Bilimleri
+          _ChartData(title: "Fizik Net", spots: fizSpots, color: Colors.cyan),
+          _ChartData(
+            title: "Kimya Net",
+            spots: kimSpots,
+            color: Colors.purpleAccent,
+          ),
+          _ChartData(
+            title: "Biyoloji Net",
+            spots: biySpots,
+            color: Colors.green,
+          ),
+
+          // Eşit Ağırlık & Sözel
+          _ChartData(
+            title: "Edebiyat Net",
+            spots: edbSpots,
+            color: Colors.orange,
+          ),
+          _ChartData(
+            title: "Tarih-1 Net",
+            spots: tar1Spots,
+            color: Colors.brown,
+          ),
+          _ChartData(
+            title: "Coğrafya-1 Net",
+            spots: cog1Spots,
+            color: Colors.teal,
+          ),
+
+          // Sözel Ekstra
+          _ChartData(
+            title: "Tarih-2 Net",
+            spots: tar2Spots,
+            color: Colors.brown.shade300,
+          ),
+          _ChartData(
+            title: "Coğrafya-2 Net",
+            spots: cog2Spots,
+            color: Colors.teal.shade300,
+          ),
+          _ChartData(
+            title: "Felsefe Net",
+            spots: felSpots,
+            color: Colors.indigo,
+          ),
+          _ChartData(
+            title: "Din Kültürü Net",
+            spots: dinSpots,
+            color: Colors.amber,
+          ),
+        ];
+
+        // Sadece verisi olan (en az bir denemede 0'dan farklı neti olan) grafikleri filtrelemek isterseniz:
+        // chartDataList.removeWhere((chart) => chart.maxNet == 0 && chart.currentNet == 0);
+        // Şimdilik isteğiniz üzerine hepsini gösteriyorum.
 
         return ListView(
-          // İYİLEŞTİRME 4: iOS Esneme Efekti
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
-            _ChartCard(
-              title: "AYT Net Grafiği",
-              currentNet: sonNet,
-              average: ortalama,
-              spots: spots,
-              isTyt: false,
+            // Grafik Alanı
+            SizedBox(
+              height: 380,
+              child: _SwipeableCharts(chartDataList: chartDataList),
             ),
+
             const Gap(24),
             Text(
               "Son Denemeler",
@@ -285,11 +507,22 @@ class _AytAnalizView extends ConsumerWidget {
             const Gap(12),
             ...denemeler.reversed.map((deneme) {
               final net = hesaplaAytNet(deneme);
-              return _DenemeListItem(
-                ad: deneme.denemeAdi,
-                tarih: deneme.tarih,
-                net: net,
-                detay: "${deneme.alan} | Mat: ${deneme.matD}-${deneme.matY}",
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          _DenemeDetailPage(deneme: deneme, isTyt: false),
+                    ),
+                  );
+                },
+                child: _DenemeListItem(
+                  ad: deneme.denemeAdi,
+                  tarih: deneme.tarih,
+                  net: net,
+                  detay: deneme.alan,
+                ),
               );
             }),
             const Gap(30),
@@ -299,29 +532,111 @@ class _AytAnalizView extends ConsumerWidget {
     );
   }
 }
+// --- YARDIMCI SINIFLAR & WIDGETLAR ---
 
-// --- WIDGETLAR (Aynı kaldı) ---
+class _ChartData {
+  final String title;
+  final List<FlSpot> spots;
+  final Color color;
+  // Max Net Hesaplama
+  double get maxNet =>
+      spots.isEmpty ? 0 : spots.map((e) => e.y).reduce((a, b) => a > b ? a : b);
+  // Ortalama Net Hesaplama
+  double get average => spots.isEmpty
+      ? 0
+      : spots.map((e) => e.y).reduce((a, b) => a + b) / spots.length;
+  // Son (Güncel) Net
+  double get currentNet => spots.isNotEmpty ? spots.last.y : 0.0;
+
+  _ChartData({required this.title, required this.spots, required this.color});
+}
+
+// Kaydırılabilir Grafik Widget'ı
+class _SwipeableCharts extends StatefulWidget {
+  final List<_ChartData> chartDataList;
+  const _SwipeableCharts({required this.chartDataList});
+
+  @override
+  State<_SwipeableCharts> createState() => _SwipeableChartsState();
+}
+
+class _SwipeableChartsState extends State<_SwipeableCharts> {
+  final PageController _pageController = PageController(
+    viewportFraction: 0.95,
+  ); // Kartları biraz daha genişlettim
+  int _currentPage = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() => _currentPage = index);
+            },
+            itemCount: widget.chartDataList.length,
+            itemBuilder: (context, index) {
+              final data = widget.chartDataList[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: _ChartCard(
+                  title: data.title,
+                  currentNet: data.currentNet,
+                  average: data.average,
+                  maxNet: data.maxNet, // Max Net eklendi
+                  spots: data.spots,
+                  lineColor: data.color,
+                ),
+              );
+            },
+          ),
+        ),
+        const Gap(10),
+        // Sayfa Göstergeleri (Dots)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(widget.chartDataList.length, (index) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentPage == index
+                    ? const Color(0xFF0099FF)
+                    : Colors.grey.withValues(alpha: 0.3),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
 
 class _ChartCard extends StatelessWidget {
   final String title;
   final double currentNet;
   final double average;
+  final double maxNet;
   final List<FlSpot> spots;
-  final bool isTyt;
+  final Color lineColor;
 
   const _ChartCard({
     required this.title,
     required this.currentNet,
     required this.average,
+    required this.maxNet,
     required this.spots,
-    required this.isTyt,
+    required this.lineColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? const Color(0xFF1F2937) : Colors.white;
-    final lineColor = const Color(0xFF8B5CF6);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -331,71 +646,157 @@ class _ChartCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Başlık (Ders Adı)
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 14,
+            style: GoogleFonts.montserrat(
+              fontSize: 16, // Font büyütüldü
               fontWeight: FontWeight.bold,
-              color: Colors.grey,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
-          const Gap(8),
+          const Gap(12),
+
+          // Net Bilgileri Satırı
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                "${currentNet.toStringAsFixed(1)} Net",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
+              // Sol Taraf: Güncel Net
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${currentNet.toStringAsFixed(1)} Net",
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: lineColor, // Rengi dersin rengiyle aynı yaptım
+                    ),
+                  ),
+                  const Text(
+                    "Son Deneme",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+
+              // Sağ Taraf: Ortalama ve Max
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Ortalama
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.show_chart,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                      const Gap(4),
+                      Text(
+                        "Ort: ${average.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black87,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(4),
+                  // En Yüksek (Max)
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.emoji_events_outlined,
+                        size: 16,
+                        color: Colors.amber,
+                      ),
+                      const Gap(4),
+                      Text(
+                        "Max: ${maxNet.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black87,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
-          ),
-          Text(
-            "Ortalama: ${average.toStringAsFixed(2)}",
-            style: const TextStyle(
-              color: Colors.green,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
           ),
           const Gap(24),
 
           // --- GRAFİK ALANI ---
-          SizedBox(
-            height: 150,
+          Expanded(
             child: LineChart(
               LineChartData(
-                gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 5, // Izgara çizgileri
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                titlesData: const FlTitlesData(
+                  show: false,
+                ), // Eksen yazılarını gizledim, temiz görünüm için
                 borderData: FlBorderData(show: false),
                 minX: 0,
                 maxX: (spots.length - 1).toDouble(),
                 minY: 0,
+                // Grafiğin üstünde biraz boşluk bırak
                 maxY:
-                    (spots.map((e) => e.y).reduce((a, b) => a > b ? a : b)) +
-                    10,
+                    (spots.isEmpty
+                        ? 0
+                        : spots
+                              .map((e) => e.y)
+                              .reduce((a, b) => a > b ? a : b)) +
+                    5,
                 lineBarsData: [
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
+                    curveSmoothness: 0.35,
                     color: lineColor,
                     barWidth: 4,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: cardColor, // Nokta içi kart rengi
+                          strokeWidth: 2,
+                          strokeColor: lineColor, // Çerçevesi çizgi rengi
+                        );
+                      },
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: lineColor.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        colors: [
+                          lineColor.withValues(alpha: 0.3),
+                          lineColor.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                 ],
@@ -444,29 +845,36 @@ class _DenemeListItem extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                ad,
-                style: TextStyle(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ad,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-              const Gap(4),
-              Text(
-                DateFormat('dd MMMM yyyy', 'tr_TR').format(tarih),
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              const Gap(4),
-              Text(
-                detay,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              ),
-            ],
+                const Gap(4),
+                Text(
+                  DateFormat('dd MMMM yyyy', 'tr_TR').format(tarih),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                const Gap(4),
+                Text(
+                  detay,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ],
+            ),
           ),
+          const Gap(10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -486,6 +894,399 @@ class _DenemeListItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// --- DETAY SAYFASI ---
+// --- DETAY SAYFASI (GÜNCELLENDİ: Alana Göre Filtreleme) ---
+class _DenemeDetailPage extends StatelessWidget {
+  final dynamic deneme; // TytDenemeModel veya AytDenemeModel
+  final bool isTyt;
+
+  const _DenemeDetailPage({required this.deneme, required this.isTyt});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = isDark ? const Color(0xFF1F2937) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        title: Text(
+          deneme.denemeAdi,
+          style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: bgColor,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: [
+              // --- Özet Başlık Kartı ---
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0099FF),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0099FF).withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      "Toplam Net",
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Gap(5),
+                    Text(
+                      (isTyt ? hesaplaTytNet(deneme) : hesaplaAytNet(deneme))
+                          .toStringAsFixed(2),
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Gap(10),
+                    // Tarih ve Alan Bilgisi
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            DateFormat(
+                              'dd MMMM yyyy',
+                              'tr_TR',
+                            ).format(deneme.tarih),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        if (!isTyt) ...[
+                          const Gap(8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _getAlanAdi(
+                                deneme.alan,
+                              ), // Kısaltma yerine uzun ad
+                              style: const TextStyle(
+                                color: Color(0xFF0099FF),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(24),
+
+              // --- Ders Detayları Listesi ---
+              if (isTyt) ...[
+                // TYT İse Standart
+                _buildDetailRow(
+                  "Türkçe",
+                  deneme.turkceD,
+                  deneme.turkceY,
+                  cardColor,
+                  textColor,
+                ),
+                _buildDetailRow(
+                  "Sosyal",
+                  deneme.sosyalD,
+                  deneme.sosyalY,
+                  cardColor,
+                  textColor,
+                ),
+                _buildDetailRow(
+                  "Matematik",
+                  deneme.matD,
+                  deneme.matY,
+                  cardColor,
+                  textColor,
+                ),
+                _buildDetailRow(
+                  "Fen",
+                  deneme.fenD,
+                  deneme.fenY,
+                  cardColor,
+                  textColor,
+                ),
+              ] else ...[
+                // AYT İse ALANA GÖRE FİLTRELEME
+                if (deneme.alan == "SAY") ...[
+                  _buildDetailRow(
+                    "Matematik",
+                    deneme.matD,
+                    deneme.matY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Fizik",
+                    deneme.fizD,
+                    deneme.fizY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Kimya",
+                    deneme.kimD,
+                    deneme.kimY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Biyoloji",
+                    deneme.biyD,
+                    deneme.biyY,
+                    cardColor,
+                    textColor,
+                  ),
+                ] else if (deneme.alan == "EA") ...[
+                  _buildDetailRow(
+                    "Matematik",
+                    deneme.matD,
+                    deneme.matY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Edebiyat",
+                    deneme.edbD,
+                    deneme.edbY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Tarih-1",
+                    deneme.tar1D,
+                    deneme.tar1Y,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Coğrafya-1",
+                    deneme.cog1D,
+                    deneme.cog1Y,
+                    cardColor,
+                    textColor,
+                  ),
+                ] else if (deneme.alan == "SOZ") ...[
+                  _buildDetailRow(
+                    "Edebiyat",
+                    deneme.edbD,
+                    deneme.edbY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Tarih-1",
+                    deneme.tar1D,
+                    deneme.tar1Y,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Coğrafya-1",
+                    deneme.cog1D,
+                    deneme.cog1Y,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Tarih-2",
+                    deneme.tar2D,
+                    deneme.tar2Y,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Coğrafya-2",
+                    deneme.cog2D,
+                    deneme.cog2Y,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Felsefe",
+                    deneme.felD,
+                    deneme.felY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Din Kültürü",
+                    deneme.dinD,
+                    deneme.dinY,
+                    cardColor,
+                    textColor,
+                  ),
+                ] else ...[
+                  // Hata durumunda veya alan boşsa varsayılan olarak temel dersleri göster
+                  _buildDetailRow(
+                    "Matematik",
+                    deneme.matD,
+                    deneme.matY,
+                    cardColor,
+                    textColor,
+                  ),
+                  _buildDetailRow(
+                    "Edebiyat",
+                    deneme.edbD,
+                    deneme.edbY,
+                    cardColor,
+                    textColor,
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getAlanAdi(String kisaKod) {
+    switch (kisaKod) {
+      case 'SAY':
+        return 'Sayısal';
+      case 'EA':
+        return 'Eşit Ağırlık';
+      case 'SOZ':
+        return 'Sözel';
+      default:
+        return kisaKod;
+    }
+  }
+
+  Widget _buildDetailRow(
+    String title,
+    int d,
+    int y,
+    Color cardColor,
+    Color textColor,
+  ) {
+    final net = d - (y / 4.0);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              title,
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: textColor,
+              ),
+            ),
+          ),
+          // İstatistik Sütunları
+          Row(
+            children: [
+              _buildStatBadge("D", "$d", Colors.green),
+              const Gap(12),
+              _buildStatBadge("Y", "$y", Colors.redAccent),
+              const Gap(16),
+              SizedBox(
+                width: 60,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      net.toStringAsFixed(2),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18, // Net yazısını biraz büyüttüm
+                        color: Color(0xFF8B5CF6),
+                      ),
+                    ),
+                    const Text(
+                      "Net",
+                      style: TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatBadge(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: color.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
     );
   }
 }

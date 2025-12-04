@@ -109,6 +109,5 @@ class DenemeDatabaseHelper {
 
     // Açık olan bağlantıyı null yap ki tekrar çağrıldığında _initDB çalışsın
     _database = null;
-    print("VERİTABANI SİLİNDİ VE SIFIRLANDI.");
   }
 }

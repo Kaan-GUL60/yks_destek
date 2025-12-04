@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_model.dart';
+import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_viewer.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_ogrenme_provider.dart';
-import 'package:kgsyks_destek/soru_viewer/drawing_page.dart'; // Oluşturduğumuz provider
 
 class BilgiKartiOgrenmePage extends ConsumerStatefulWidget {
   const BilgiKartiOgrenmePage({super.key});
@@ -218,11 +218,11 @@ class _FlashCardItem extends StatelessWidget {
       ),
       child: GestureDetector(
         onTap: () {
+          // --- DÜZELTME BURADA ---
+          // Doğrudan detay sayfasına (BilgiNotuViewer) yönlendiriyoruz.
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => DrawingPage(imagePath: not.imagePath),
-            ),
+            MaterialPageRoute(builder: (_) => BilgiNotuViewer(notId: not.id!)),
           );
         },
         child: ClipRRect(
@@ -230,7 +230,7 @@ class _FlashCardItem extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 1. KATMAN: RESİM (Tam ekran veya büyük kısım)
+              // 1. KATMAN: RESİM
               Image.file(
                 File(not.imagePath),
                 fit: BoxFit.cover,
@@ -244,7 +244,7 @@ class _FlashCardItem extends StatelessWidget {
                 ),
               ),
 
-              // 2. KATMAN: KARARTMA GRADIENTİ (Yazı okunabilsin diye)
+              // 2. KATMAN: KARARTMA GRADIENTİ
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
@@ -254,7 +254,7 @@ class _FlashCardItem extends StatelessWidget {
                       colors: [
                         Colors.transparent,
                         Colors.transparent,
-                        Colors.black.withValues(alpha: 0.7), // Altta koyulaşır
+                        Colors.black.withValues(alpha: 0.7),
                         Colors.black.withValues(alpha: 0.95),
                       ],
                       stops: const [0.0, 0.5, 0.8, 1.0],
@@ -263,7 +263,7 @@ class _FlashCardItem extends StatelessWidget {
                 ),
               ),
 
-              // 3. KATMAN: BİLGİLER (En altta)
+              // 3. KATMAN: BİLGİLER
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -274,7 +274,7 @@ class _FlashCardItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Ders ve Konu Etiketi
+                      // Ders ve Öncelik Etiketleri
                       Row(
                         children: [
                           Container(
@@ -302,9 +302,7 @@ class _FlashCardItem extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: priorityColor.withValues(
-                                alpha: 0.2,
-                              ), // Transparan arka plan
+                              color: priorityColor.withValues(alpha: 0.2),
                               border: Border.all(
                                 color: priorityColor,
                                 width: 1.5,
@@ -322,8 +320,7 @@ class _FlashCardItem extends StatelessWidget {
                                 Text(
                                   _getPriorityLabel(not.onemDerecesi),
                                   style: GoogleFonts.montserrat(
-                                    color:
-                                        priorityColor, // Metin rengini de parlak yapalım (siyah zeminde okunur)
+                                    color: priorityColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -348,9 +345,7 @@ class _FlashCardItem extends StatelessWidget {
 
                       // Açıklama Metni
                       Container(
-                        constraints: const BoxConstraints(
-                          maxHeight: 120,
-                        ), // Çok uzunsa taşmasın
+                        constraints: const BoxConstraints(maxHeight: 120),
                         child: SingleChildScrollView(
                           child: Text(
                             not.aciklama,
@@ -368,7 +363,7 @@ class _FlashCardItem extends StatelessWidget {
                 ),
               ),
 
-              // 4. KATMAN (Opsiyonel): Sağ üst köşeye tarih vb. eklenebilir
+              // 4. KATMAN: Tarih (Sağ Üst)
               Positioned(
                 top: 20,
                 right: 20,
