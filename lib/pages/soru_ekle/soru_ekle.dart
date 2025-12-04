@@ -289,10 +289,7 @@ class _SoruEkleState extends ConsumerState<SoruEkle>
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                    Icon(Icons.calendar_today, color: Color(0xFF1E88E5)),
                     const Gap(10),
                     Text(
                       selectedDate == null

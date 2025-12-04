@@ -50,15 +50,42 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
   // EA - Sözel Ortak
   final aytEdbD = TextEditingController();
   final aytEdbY = TextEditingController();
-  final aytTarD = TextEditingController();
-  final aytTarY = TextEditingController();
-  final aytCogD = TextEditingController();
-  final aytCogY = TextEditingController();
+  // İsimlerini modelle uyumlu olsun diye Tar1/Cog1 olarak düşünüyoruz
+  final aytTar1D = TextEditingController(); // Eski aytTarD
+  final aytTar1Y = TextEditingController(); // Eski aytTarY
+  final aytCog1D = TextEditingController(); // Eski aytCogD
+  final aytCog1Y = TextEditingController(); // Eski aytCogY
+
+  // YENİ EKLENENLER
+  final aytTar2D = TextEditingController();
+  final aytTar2Y = TextEditingController();
+  final aytCog2D = TextEditingController();
+  final aytCog2Y = TextEditingController();
   // Sözel Ekstra
   final aytFelD = TextEditingController();
   final aytFelY = TextEditingController();
   final aytDinD = TextEditingController();
   final aytDinY = TextEditingController();
+
+  // Limit kontrol fonksiyonu
+  bool _validateScore(String dersAdi, String dText, String yText, int maxSoru) {
+    int d = int.tryParse(dText) ?? 0;
+    int y = int.tryParse(yText) ?? 0;
+
+    if (d + y > maxSoru) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "$dersAdi için toplam işaretlenen (D+Y) $maxSoru sayısını geçemez!",
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false; // Hata var
+    }
+    return true; // Sorun yok
+  }
 
   @override
   void dispose() {
@@ -81,10 +108,14 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     aytBiyY.dispose();
     aytEdbD.dispose();
     aytEdbY.dispose();
-    aytTarD.dispose();
-    aytTarY.dispose();
-    aytCogD.dispose();
-    aytCogY.dispose();
+    aytTar1D.dispose();
+    aytTar1Y.dispose();
+    aytCog1D.dispose();
+    aytCog1Y.dispose();
+    aytTar2D.dispose();
+    aytTar2Y.dispose(); // Yeni
+    aytCog2D.dispose();
+    aytCog2Y.dispose();
     aytFelD.dispose();
     aytFelY.dispose();
     aytDinD.dispose();
@@ -150,6 +181,12 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
   }
 
   Future<void> _saveTYT() async {
+    // Validasyonlar (Limit Kontrolleri)
+    if (!_validateScore("Türkçe", tytTurkceD.text, tytTurkceY.text, 40)) return;
+    if (!_validateScore("Sosyal", tytSosyalD.text, tytSosyalY.text, 20)) return;
+    if (!_validateScore("Matematik", tytMatD.text, tytMatY.text, 40)) return;
+    if (!_validateScore("Fen", tytFenD.text, tytFenY.text, 20)) return;
+
     final deneme = TytDenemeModel(
       denemeAdi: _denemeAdiController.text.isEmpty
           ? "TYT Denemesi"
@@ -169,7 +206,7 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("TYT Denemesi Kaydedildi!"),
+          content: Text("TYT Kaydedildi!"),
           backgroundColor: Colors.green,
         ),
       );
@@ -181,6 +218,33 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     String alanKodu = "SAY";
     if (_selectedAlan.contains(1)) alanKodu = "EA";
     if (_selectedAlan.contains(2)) alanKodu = "SOZ";
+
+    // Validasyonlar (Alana Göre Özelleştirilmiş)
+    if (alanKodu == "SAY") {
+      if (!_validateScore("Matematik", aytMatD.text, aytMatY.text, 40)) return;
+      if (!_validateScore("Fizik", aytFizD.text, aytFizY.text, 14)) return;
+      if (!_validateScore("Kimya", aytKimD.text, aytKimY.text, 13)) return;
+      if (!_validateScore("Biyoloji", aytBiyD.text, aytBiyY.text, 13)) return;
+    } else if (alanKodu == "EA") {
+      if (!_validateScore("Matematik", aytMatD.text, aytMatY.text, 40)) return;
+      if (!_validateScore("Edebiyat", aytEdbD.text, aytEdbY.text, 24)) return;
+      if (!_validateScore("Tarih-1", aytTar1D.text, aytTar1Y.text, 10)) return;
+      if (!_validateScore("Coğrafya-1", aytCog1D.text, aytCog1Y.text, 6)) {
+        return;
+      }
+    } else if (alanKodu == "SOZ") {
+      if (!_validateScore("Edebiyat", aytEdbD.text, aytEdbY.text, 24)) return;
+      if (!_validateScore("Tarih-1", aytTar1D.text, aytTar1Y.text, 10)) return;
+      if (!_validateScore("Coğrafya-1", aytCog1D.text, aytCog1Y.text, 6)) {
+        return;
+      }
+      if (!_validateScore("Tarih-2", aytTar2D.text, aytTar2Y.text, 11)) return;
+      if (!_validateScore("Coğrafya-2", aytCog2D.text, aytCog2Y.text, 11)) {
+        return;
+      }
+      if (!_validateScore("Felsefe", aytFelD.text, aytFelY.text, 12)) return;
+      if (!_validateScore("Din", aytDinD.text, aytDinY.text, 6)) return;
+    }
 
     final deneme = AytDenemeModel(
       denemeAdi: _denemeAdiController.text.isEmpty
@@ -198,10 +262,14 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
       biyY: int.tryParse(aytBiyY.text) ?? 0,
       edbD: int.tryParse(aytEdbD.text) ?? 0,
       edbY: int.tryParse(aytEdbY.text) ?? 0,
-      tarD: int.tryParse(aytTarD.text) ?? 0,
-      tarY: int.tryParse(aytTarY.text) ?? 0,
-      cogD: int.tryParse(aytCogD.text) ?? 0,
-      cogY: int.tryParse(aytCogY.text) ?? 0,
+      tar1D: int.tryParse(aytTar1D.text) ?? 0,
+      tar1Y: int.tryParse(aytTar1Y.text) ?? 0,
+      cog1D: int.tryParse(aytCog1D.text) ?? 0,
+      cog1Y: int.tryParse(aytCog1Y.text) ?? 0,
+      tar2D: int.tryParse(aytTar2D.text) ?? 0, // Yeni
+      tar2Y: int.tryParse(aytTar2Y.text) ?? 0, // Yeni
+      cog2D: int.tryParse(aytCog2D.text) ?? 0, // Yeni
+      cog2Y: int.tryParse(aytCog2Y.text) ?? 0, // Yeni
       felD: int.tryParse(aytFelD.text) ?? 0,
       felY: int.tryParse(aytFelY.text) ?? 0,
       dinD: int.tryParse(aytDinD.text) ?? 0,
@@ -212,7 +280,7 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("AYT Denemesi Kaydedildi!"),
+          content: Text("AYT Kaydedildi!"),
           backgroundColor: Colors.green,
         ),
       );
@@ -491,14 +559,18 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
           ] else if (_selectedAlan.contains(1)) ...[
             _buildDersRow("Matematik", aytMatD, aytMatY, isDark),
             _buildDersRow("Edebiyat", aytEdbD, aytEdbY, isDark),
-            _buildDersRow("Tarih", aytTarD, aytTarY, isDark),
-            _buildDersRow("Coğrafya", aytCogD, aytCogY, isDark),
+            _buildDersRow("Tarih-1", aytTar1D, aytTar1Y, isDark),
+            _buildDersRow("Coğrafya-1", aytCog1D, aytCog1Y, isDark),
           ] else ...[
             _buildDersRow("Edebiyat", aytEdbD, aytEdbY, isDark),
-            _buildDersRow("Tarih", aytTarD, aytTarY, isDark),
-            _buildDersRow("Coğrafya", aytCogD, aytCogY, isDark),
+            _buildDersRow("Tarih-1", aytTar1D, aytTar1Y, isDark),
+            _buildDersRow("Coğrafya-1", aytCog1D, aytCog1Y, isDark),
+            const Gap(10), // Ayrım için boşluk
+            _buildDersRow("Tarih-2", aytTar2D, aytTar2Y, isDark), // Yeni
+            _buildDersRow("Coğrafya-2", aytCog2D, aytCog2Y, isDark), // Yeni
+            const Gap(10),
             _buildDersRow("Felsefe", aytFelD, aytFelY, isDark),
-            _buildDersRow("Din", aytDinD, aytDinY, isDark),
+            _buildDersRow("Din Kültürü", aytDinD, aytDinY, isDark),
           ],
 
           const Gap(30),
@@ -506,12 +578,36 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: _saveAYT,
+              onPressed: () async {
+                try {
+                  await _saveAYT();
+                } catch (e) {
+                  print("Hata oluştu, veritabanı sıfırlanıyor: $e");
+
+                  // 1. Veritabanını sil
+                  await DenemeDatabaseHelper.instance.nukeDatabase();
+
+                  if (context.mounted) {
+                    // 2. Kullanıcıya bilgi ver
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "Veritabanı güncellendi. Lütfen tekrar 'AYT Kaydet' butonuna basın.",
+                        ),
+                        backgroundColor: Colors.orange,
+                        duration: Duration(seconds: 4),
+                      ),
+                    );
+                  }
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),
+                elevation: 4, // Biraz gölge ekledik
+                shadowColor: primaryColor.withValues(alpha: 0.4),
               ),
               child: const Text(
                 "AYT Kaydet",
@@ -523,6 +619,7 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
               ),
             ),
           ),
+          const Gap(30), // Klavye açılınca altta boşluk kalsın
         ],
       ),
     );
@@ -548,10 +645,13 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
             controller: _denemeAdiController,
             style: TextStyle(color: textColor),
             decoration: InputDecoration(
-              hintText: "Deneme Adı (Örn: 3D TYT TG 1)",
+              hintText: "Deneme Adı (Örn: X TYT TG 1)",
               hintStyle: TextStyle(color: Colors.grey[500]),
               border: InputBorder.none,
-              icon: const Icon(Icons.edit_note, color: Colors.blueAccent),
+              // 'icon' yerine 'prefixIcon' kullanın
+              prefixIcon: const Icon(Icons.edit_note, color: Colors.blueAccent),
+              // İsterseniz ikonu daha da sola yapıştırmak için constraint ekleyebilirsiniz:
+              prefixIconConstraints: BoxConstraints(minWidth: 10),
             ),
           ),
           const Divider(),
@@ -595,30 +695,34 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2D333B) : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16), // Daha yumuşak köşeler
         border: Border.all(
-          color: isDark ? Colors.white10 : Colors.grey.shade200,
+          color: isDark ? Colors.white10 : Colors.grey.shade300,
         ),
       ),
       child: Row(
         children: [
+          // Ders Adı Alanı
           Expanded(
-            flex: 3,
+            flex: 3, // Yazıya biraz daha alan bıraktık
             child: Text(
               dersAdi,
               style: GoogleFonts.montserrat(
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: 15, // Yazı boyutu ideal
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ),
-          Expanded(
-            flex: 2,
+          // Doğru Kutusu
+          SizedBox(
+            width: 60, // Sabit genişlik vererek kutuların hizasını garantiledik
             child: _buildMiniInput(dogruCont, "D", Colors.green, isDark),
           ),
-          const Gap(10),
-          Expanded(
-            flex: 2,
+          const Gap(12), // Kutu arası boşluk
+          // Yanlış Kutusu
+          SizedBox(
+            width: 60, // Sabit genişlik
             child: _buildMiniInput(yanlisCont, "Y", Colors.red, isDark),
           ),
         ],
@@ -626,6 +730,7 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     );
   }
 
+  // --- KUTUCUK TASARIMI (Mini Input) - DÜZELTİLMİŞ HALİ ---
   Widget _buildMiniInput(
     TextEditingController controller,
     String hint,
@@ -633,22 +738,47 @@ class _DenemeEklePageState extends State<DenemeEklePage> {
     bool isDark,
   ) {
     return Container(
-      height: 40,
+      height: 50, // Yüksekliği artırdık, sıkışıklık gitti
+      alignment: Alignment.center, // İçeriği ortalar
       decoration: BoxDecoration(
-        color: isDark ? Colors.black26 : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.6), // Çerçeve rengi belirginleşti
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        style: TextStyle(fontWeight: FontWeight.bold, color: color),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: color.withValues(alpha: 0.5)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.only(bottom: 8),
+      // TextField'ı Center ile sarmaladık ki kayma yapmasın
+      child: Center(
+        child: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center, // Yatayda ortalar
+          textAlignVertical: TextAlignVertical.center, // Dikeyde ortalar
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18, // Rakamları biraz büyüttük, daha şık durur
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: color.withValues(alpha: 0.5),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            border: InputBorder.none, // Alt çizgiyi kaldırdık
+            isDense: true, // Sıkıştırılmış mod
+            contentPadding:
+                EdgeInsets.zero, // Padding'i sıfırladık, Center halledecek
+          ),
         ),
       ),
     );

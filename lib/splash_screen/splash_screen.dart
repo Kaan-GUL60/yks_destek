@@ -137,7 +137,7 @@ class SplashScreen extends ConsumerWidget {
     });
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 11, 21, 31),
-      body: Center(child: Image.asset('assets/logo/logo.png', width: 150)),
+      body: Center(child: Image.asset('assets/logo/logo.png')),
     );
   }
 }

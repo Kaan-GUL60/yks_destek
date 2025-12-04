@@ -51,46 +51,50 @@ class BilgiKartlariPage extends ConsumerWidget {
 }
 
 // --- FİLTRE KONTROLLERİ ---
+// -------------------------------------------------------------------------
+// 1. ADIM: _BilgiFilterControls SINIFINI TAMAMEN BU KOD İLE DEĞİŞTİRİN
+// -------------------------------------------------------------------------
+
 class _BilgiFilterControls extends ConsumerWidget {
   const _BilgiFilterControls();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Platform kontrolü
+    final isIOS = Platform.isIOS;
+
+    // Tema ve Veriler
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // YENİ PROVIDERLARI KULLANIYORUZ
     final filterState = ref.watch(bilgiFilterProvider);
-    final notifier = ref.read(bilgiFilterProvider.notifier);
-
-    // Ders ve Konu listeleri ortak olduğu için eskileri kullanabiliriz
     final dersler = ref.watch(dersListProvider);
     final konular = ref.watch(konuListProvider);
+    final notifier = ref.read(bilgiFilterProvider.notifier);
 
-    final dropdownDecoration = InputDecoration(
-      filled: true,
-      fillColor: isDarkMode ? const Color(0xFF1F2937) : Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      hintStyle: TextStyle(
-        color: isDarkMode ? Colors.white70 : Colors.grey[600],
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-      ),
+    // iOS Tasarımı İçin Dekorasyon (Mevcut kodunuzdan)
+    final iosDecoration = BoxDecoration(
+      color: isDarkMode ? const Color(0xFF1F2937) : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    );
+
+    final iosTextStyle = TextStyle(
+      color: isDarkMode ? Colors.white : Colors.black,
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
     );
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
       child: Column(
         children: [
-          // --- Ders ve Konu Filtreleri ---
+          // -------------------------------------------------
+          // 1. BÖLÜM: DERS VE KONU SEÇİMİ (PLATFORM AYRIMI)
+          // -------------------------------------------------
           Row(
             children: [
+              // --- DERS SEÇİMİ ---
               Expanded(
-                child: Platform.isIOS
-                    // --- iOS KISMI (YENİ EKLENDİ) ---
+                child: isIOS
+                    // [iOS KISMI] Orijinal Cupertino Tasarım
                     ? GestureDetector(
                         onTap: () {
                           showCupertinoModalPopup(
@@ -107,9 +111,10 @@ class _BilgiFilterControls extends ConsumerWidget {
                                     child: CupertinoPicker(
                                       itemExtent: 32,
                                       onSelectedItemChanged: (index) {
-                                        notifier.setDers(
-                                          dersler.toSet().toList()[index],
-                                        );
+                                        final ders = dersler
+                                            .toSet()
+                                            .toList()[index];
+                                        notifier.setDers(ders);
                                       },
                                       children: dersler
                                           .toSet()
@@ -132,22 +137,13 @@ class _BilgiFilterControls extends ConsumerWidget {
                             horizontal: 15,
                             vertical: 12,
                           ),
-                          decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? const Color(0xFF1F2937)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          decoration: iosDecoration,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 filterState.ders ?? 'Ders Seç',
-                                style: dropdownDecoration.hintStyle?.copyWith(
-                                  color: isDarkMode
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
+                                style: iosTextStyle,
                               ),
                               Icon(
                                 Icons.keyboard_arrow_down,
@@ -159,46 +155,33 @@ class _BilgiFilterControls extends ConsumerWidget {
                           ),
                         ),
                       )
-                    // --- ANDROID KISMI (AYNEN KORUNDU) ---
-                    : DropdownButtonFormField<String>(
-                        key: ValueKey(filterState.ders ?? 'ders-reset'),
-                        initialValue: filterState.ders,
-                        hint: Text(
-                          'Ders Seç',
-                          style: dropdownDecoration.hintStyle,
-                        ),
-                        isExpanded: true,
-                        icon: Icon(
-                          Icons.keyboard_arrow_down,
-                          color: isDarkMode ? Colors.white70 : Colors.grey,
-                        ),
-                        dropdownColor: isDarkMode
-                            ? const Color(0xFF1F2937)
-                            : Colors.white,
-                        style: TextStyle(
-                          color: isDarkMode ? Colors.white : Colors.black,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: GoogleFonts.montserrat().fontFamily,
-                        ),
-                        decoration: dropdownDecoration,
-                        items: dersler.toSet().toList().map((ders) {
-                          return DropdownMenuItem(
-                            value: ders,
-                            child: Text(ders),
+                    // [ANDROID KISMI] Yeni Modern Tasarım
+                    : _ModernSelectButton(
+                        title: filterState.ders ?? 'Ders Seç',
+                        hint: 'Ders',
+                        icon: Icons.menu_book_rounded,
+                        isActive: filterState.ders != null,
+                        onTap: () {
+                          _showAndroidSelectionSheet(
+                            context,
+                            title: "Ders Seçiniz",
+                            items: dersler,
+                            selectedItem: filterState.ders,
+                            onSelected: (val) => notifier.setDers(val),
                           );
-                        }).toList(),
-                        onChanged: (value) => notifier.setDers(value),
+                        },
                       ),
               ),
-              const SizedBox(width: 16),
+
+              const SizedBox(width: 12),
+
+              // --- KONU SEÇİMİ ---
               Expanded(
-                child: Platform.isIOS
-                    // --- iOS KISMI (YENİ EKLENDİ) ---
+                child: isIOS
+                    // [iOS KISMI] Orijinal Cupertino Tasarım
                     ? GestureDetector(
                         onTap: () {
-                          if (filterState.ders == null) {
-                            return;
-                          } // Ders seçilmediyse açma
+                          if (filterState.ders == null) return;
                           showCupertinoModalPopup(
                             context: context,
                             builder: (context) => Container(
@@ -213,9 +196,10 @@ class _BilgiFilterControls extends ConsumerWidget {
                                     child: CupertinoPicker(
                                       itemExtent: 32,
                                       onSelectedItemChanged: (index) {
-                                        notifier.setKonu(
-                                          konular.toSet().toList()[index],
-                                        );
+                                        final konu = konular
+                                            .toSet()
+                                            .toList()[index];
+                                        notifier.setKonu(konu);
                                       },
                                       children: konular
                                           .toSet()
@@ -238,25 +222,15 @@ class _BilgiFilterControls extends ConsumerWidget {
                             horizontal: 15,
                             vertical: 12,
                           ),
-                          decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? const Color(0xFF1F2937)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          decoration: iosDecoration,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                // Taşmayı önlemek için
                                 child: Text(
                                   filterState.konu ?? 'Konu Seç',
                                   overflow: TextOverflow.ellipsis,
-                                  style: dropdownDecoration.hintStyle?.copyWith(
-                                    color: isDarkMode
-                                        ? Colors.white
-                                        : Colors.black,
-                                  ),
+                                  style: iosTextStyle,
                                 ),
                               ),
                               Icon(
@@ -269,76 +243,202 @@ class _BilgiFilterControls extends ConsumerWidget {
                           ),
                         ),
                       )
-                    // --- ANDROID KISMI (AYNEN KORUNDU) ---
-                    : DropdownButtonFormField<String>(
-                        key: ValueKey(filterState.konu ?? 'konu-reset'),
-                        initialValue: filterState.konu,
-                        hint: Text(
-                          'Konu Seç',
-                          style: dropdownDecoration.hintStyle,
-                        ),
-                        isExpanded: true,
-                        icon: Icon(
-                          Icons.keyboard_arrow_down,
-                          color: isDarkMode ? Colors.white70 : Colors.grey,
-                        ),
-                        dropdownColor: isDarkMode
-                            ? const Color(0xFF1F2937)
-                            : Colors.white,
-                        style: TextStyle(
-                          color: isDarkMode ? Colors.white : Colors.black,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: GoogleFonts.montserrat().fontFamily,
-                        ),
-                        decoration: dropdownDecoration,
-                        items: (filterState.ders != null)
-                            ? konular.toSet().toList().map((konu) {
-                                return DropdownMenuItem(
-                                  value: konu,
-                                  child: Text(konu),
-                                );
-                              }).toList()
-                            : [],
-                        onChanged: (value) => notifier.setKonu(value),
+                    // [ANDROID KISMI] Yeni Modern Tasarım
+                    : _ModernSelectButton(
+                        title: filterState.konu ?? 'Konu Seç',
+                        hint: 'Konu',
+                        icon: Icons.category_rounded,
+                        isActive: filterState.konu != null,
+                        isDisabled: filterState.ders == null,
+                        onTap: () {
+                          if (filterState.ders == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                  "Lütfen önce ders seçiniz.",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          _showAndroidSelectionSheet(
+                            context,
+                            title: "${filterState.ders} Konuları",
+                            items: konular,
+                            selectedItem: filterState.konu,
+                            onSelected: (val) => notifier.setKonu(val),
+                          );
+                        },
                       ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // --- ÖNEM DERECESİ FİLTRELERİ (Status yerine) ---
+          const SizedBox(height: 20),
+
+          // -------------------------------------------------
+          // 2. BÖLÜM: ÖNEM DERECESİ FİLTRELERİ (Status Yerine)
+          // -------------------------------------------------
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            physics: isIOS
+                ? const BouncingScrollPhysics()
+                : const ClampingScrollPhysics(),
             child: Row(
               children: [
-                FilterButton(
+                _buildFilterItem(
+                  context,
+                  isIOS: isIOS,
                   label: 'Hepsi',
                   isSelected: filterState.onemDerecesi == null,
                   onPressed: () => notifier.setOnemDerecesi(null),
                 ),
-                const SizedBox(width: 10),
-                FilterButton(
+                const SizedBox(width: 8),
+                _buildFilterItem(
+                  context,
+                  isIOS: isIOS,
                   label: 'Kritik',
                   isSelected: filterState.onemDerecesi == 0,
                   onPressed: () => notifier.setOnemDerecesi(0),
+                  activeColor: const Color(0xFFE53935), // Kırmızı
                 ),
-                const SizedBox(width: 10),
-                FilterButton(
+                const SizedBox(width: 8),
+                _buildFilterItem(
+                  context,
+                  isIOS: isIOS,
                   label: 'Olağan',
                   isSelected: filterState.onemDerecesi == 1,
                   onPressed: () => notifier.setOnemDerecesi(1),
+                  activeColor: Colors.orange, // Turuncu
                 ),
-                const SizedBox(width: 10),
-                FilterButton(
+                const SizedBox(width: 8),
+                _buildFilterItem(
+                  context,
+                  isIOS: isIOS,
                   label: 'Düşük',
                   isSelected: filterState.onemDerecesi == 2,
                   onPressed: () => notifier.setOnemDerecesi(2),
+                  activeColor: const Color(0xFF43A047), // Yeşil
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // YARDIMCI METOT: Platforma göre doğru filtre butonunu seçer
+  Widget _buildFilterItem(
+    BuildContext context, {
+    required bool isIOS,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onPressed,
+    Color activeColor = const Color(0xFF0099FF),
+  }) {
+    if (isIOS) {
+      // iOS ise Eski "FilterButton" widget'ını kullan
+      return FilterButton(
+        label: label,
+        isSelected: isSelected,
+        onPressed: onPressed,
+      );
+    } else {
+      // Android ise Yeni "ModernFilterChip" widget'ını kullan
+      return _ModernFilterChip(
+        label: label,
+        isSelected: isSelected,
+        onPressed: onPressed,
+        activeColor: activeColor,
+      );
+    }
+  }
+
+  // YARDIMCI METOT: Sadece Android için Bottom Sheet
+  void _showAndroidSelectionSheet(
+    BuildContext context, {
+    required String title,
+    required List<String> items,
+    required String? selectedItem,
+    required Function(String) onSelected,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      showDragHandle: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: GoogleFonts.montserrat().fontFamily,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final isSelected = item == selectedItem;
+                      final primaryColor = const Color(0xFF0099FF);
+
+                      return Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          onTap: () {
+                            onSelected(item);
+                            Navigator.pop(context);
+                          },
+                          title: Text(
+                            item,
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.normal,
+                              color: isSelected ? primaryColor : null,
+                              fontFamily: GoogleFonts.montserrat().fontFamily,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle_rounded,
+                                  color: primaryColor,
+                                )
+                              : null,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 4,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -560,6 +660,12 @@ class _BilgiNotuCard extends ConsumerWidget {
 }
 
 // BU BUTON AYNI KALIYOR (Görünüm amaçlı olduğu için)
+// -------------------------------------------------------------------------
+// 2. ADIM: DOSYANIN EN ALTINDA BU 3 SINIF DA BULUNMALIDIR
+// (Mevcut FilterButton'ı silip bunları yapıştırın)
+// -------------------------------------------------------------------------
+
+// 1. [iOS İçin] Eski Stil Filtre Butonu (Korundu)
 class FilterButton extends StatelessWidget {
   final String label;
   final bool isSelected;
@@ -595,6 +701,170 @@ class FilterButton extends StatelessWidget {
             fontFamily: GoogleFonts.montserrat().fontFamily,
             fontSize: 14,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// 2. [Android İçin] Modern Seçim Butonu
+class _ModernSelectButton extends StatelessWidget {
+  final String title;
+  final String hint;
+  final IconData icon;
+  final bool isActive;
+  final bool isDisabled;
+  final VoidCallback onTap;
+
+  const _ModernSelectButton({
+    required this.title,
+    required this.hint,
+    required this.icon,
+    required this.onTap,
+    this.isActive = false,
+    this.isDisabled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Tasarım renkleri
+    Color fillColor = isDarkMode
+        ? const Color(0xFF1F2937)
+        : const Color(0xFFF3F4F6);
+    if (isDisabled) {
+      fillColor = isDarkMode
+          ? const Color(0xFF121212)
+          : const Color(0xFFF9FAFB);
+    }
+
+    Color contentColor = isDarkMode ? Colors.white : const Color(0xFF111827);
+    if (isDisabled) {
+      contentColor = isDarkMode ? Colors.grey[700]! : Colors.grey[400]!;
+    }
+
+    return InkWell(
+      onTap: isDisabled ? null : onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: fillColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActive ? const Color(0xFF0099FF) : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isActive
+                  ? const Color(0xFF0099FF)
+                  : (isDisabled ? contentColor : Colors.grey),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isActive)
+                    Text(
+                      hint,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: const Color(0xFF0099FF),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: GoogleFonts.montserrat().fontFamily,
+                      ),
+                    ),
+                  Text(
+                    isActive ? title : hint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isActive
+                          ? contentColor
+                          : (isDisabled ? contentColor : Colors.grey[600]),
+                      fontSize: isActive ? 14 : 14,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                      fontFamily: GoogleFonts.montserrat().fontFamily,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: isDisabled ? contentColor : Colors.grey,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// 3. [Android İçin] Modern Filtre Çipi
+class _ModernFilterChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onPressed;
+  final Color activeColor;
+
+  const _ModernFilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onPressed,
+    this.activeColor = const Color(0xFF0099FF),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? activeColor.withValues(alpha: 0.15)
+              : (isDarkMode
+                    ? const Color(0xFF1F2937)
+                    : const Color(0xFFF3F4F6)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeColor : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              Icon(Icons.check, size: 16, color: activeColor),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? activeColor
+                    : (isDarkMode ? Colors.white70 : Colors.black87),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+                fontFamily: GoogleFonts.montserrat().fontFamily,
+              ),
+            ),
+          ],
         ),
       ),
     );

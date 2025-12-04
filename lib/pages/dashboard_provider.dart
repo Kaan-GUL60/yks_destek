@@ -27,22 +27,29 @@ class DashboardStats {
   });
 }
 
-// --- NET HESAPLAMA FONKSİYONLARI (Burada tekrar tanımladık veya import edebilirsin) ---
+// --- NET HESAPLAMA FONKSİYONLARI ---
+
+// TYT Hesaplama
 double _hesaplaTyt(TytDenemeModel d) =>
-    (d.turkceD - d.turkceY / 4) +
-    (d.sosyalD - d.sosyalY / 4) +
-    (d.matD - d.matY / 4) +
-    (d.fenD - d.fenY / 4);
-double _hesaplaAyt(AytDenemeModel d) =>
-    (d.matD - d.matY / 4) +
-    (d.fizD - d.fizY / 4) +
-    (d.kimD - d.kimY / 4) +
-    (d.biyD - d.biyY / 4) +
-    (d.edbD - d.edbY / 4) +
-    (d.tarD - d.tarY / 4) +
-    (d.cogD - d.cogY / 4) +
-    (d.felD - d.felY / 4) +
-    (d.dinD - d.dinY / 4);
+    (d.turkceD - d.turkceY / 4.0) +
+    (d.sosyalD - d.sosyalY / 4.0) +
+    (d.matD - d.matY / 4.0) +
+    (d.fenD - d.fenY / 4.0);
+
+// AYT Hesaplama (GÜNCELLENDİ: Yeni alanlar dahil edildi)
+double _hesaplaAyt(AytDenemeModel d) {
+  return (d.matD - d.matY / 4.0) +
+      (d.fizD - d.fizY / 4.0) +
+      (d.kimD - d.kimY / 4.0) +
+      (d.biyD - d.biyY / 4.0) +
+      (d.edbD - d.edbY / 4.0) +
+      (d.tar1D - d.tar1Y / 4.0) + // Güncellendi
+      (d.cog1D - d.cog1Y / 4.0) + // Güncellendi
+      (d.tar2D - d.tar2Y / 4.0) + // Yeni
+      (d.cog2D - d.cog2Y / 4.0) + // Yeni
+      (d.felD - d.felY / 4.0) +
+      (d.dinD - d.dinY / 4.0);
+}
 
 // --- ANA PROVIDER ---
 final dashboardProvider = FutureProvider.autoDispose<DashboardStats>((
@@ -70,8 +77,7 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardStats>((
   final int notCount = notlar.length;
 
   // 3. Denemeleri Çek ve Hesapla
-  final tytler = await DenemeDatabaseHelper.instance
-      .getAllTyt(); // Tarihe göre sıralı (Eskiden yeniye)
+  final tytler = await DenemeDatabaseHelper.instance.getAllTyt();
   final aytler = await DenemeDatabaseHelper.instance.getAllAyt();
 
   // TYT Hesaplamaları
@@ -79,7 +85,6 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardStats>((
   double son3TytTop = 0.0;
   int tytAdet = 0;
 
-  // En yüksek neti bul
   for (var t in tytler) {
     double net = _hesaplaTyt(t);
     if (net > maxTyt) maxTyt = net;

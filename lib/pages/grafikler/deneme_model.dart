@@ -64,6 +64,8 @@ class TytDenemeModel {
   }
 }
 
+// ... (TytDenemeModel kısmı aynı kalabilir) ...
+
 class AytDenemeModel {
   final int? id;
   final String denemeAdi;
@@ -80,10 +82,14 @@ class AytDenemeModel {
   final int biyY;
   final int edbD;
   final int edbY;
-  final int tarD;
-  final int tarY;
-  final int cogD;
-  final int cogY;
+  final int tar1D;
+  final int tar1Y; // Adını tar1 olarak netleştirelim
+  final int cog1D;
+  final int cog1Y; // Adını cog1 olarak netleştirelim
+  final int tar2D;
+  final int tar2Y; // YENİ
+  final int cog2D;
+  final int cog2Y; // YENİ
   final int felD;
   final int felY;
   final int dinD;
@@ -104,45 +110,40 @@ class AytDenemeModel {
     this.biyY = 0,
     this.edbD = 0,
     this.edbY = 0,
-    this.tarD = 0,
-    this.tarY = 0,
-    this.cogD = 0,
-    this.cogY = 0,
+    this.tar1D = 0,
+    this.tar1Y = 0,
+    this.cog1D = 0,
+    this.cog1Y = 0,
+    this.tar2D = 0,
+    this.tar2Y = 0, // YENİ
+    this.cog2D = 0,
+    this.cog2Y = 0, // YENİ
     this.felD = 0,
     this.felY = 0,
     this.dinD = 0,
     this.dinY = 0,
   });
 
-  // Veritabanına Yazma
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'denemeAdi': denemeAdi,
       'tarih': tarih.toIso8601String(),
       'alan': alan,
-      'matD': matD,
-      'matY': matY,
-      'fizD': fizD,
-      'fizY': fizY,
-      'kimD': kimD,
-      'kimY': kimY,
-      'biyD': biyD,
-      'biyY': biyY,
-      'edbD': edbD,
-      'edbY': edbY,
-      'tarD': tarD,
-      'tarY': tarY,
-      'cogD': cogD,
-      'cogY': cogY,
-      'felD': felD,
-      'felY': felY,
-      'dinD': dinD,
-      'dinY': dinY,
+      'matD': matD, 'matY': matY,
+      'fizD': fizD, 'fizY': fizY,
+      'kimD': kimD, 'kimY': kimY,
+      'biyD': biyD, 'biyY': biyY,
+      'edbD': edbD, 'edbY': edbY,
+      'tar1D': tar1D, 'tar1Y': tar1Y,
+      'cog1D': cog1D, 'cog1Y': cog1Y,
+      'tar2D': tar2D, 'tar2Y': tar2Y, // YENİ
+      'cog2D': cog2D, 'cog2Y': cog2Y, // YENİ
+      'felD': felD, 'felY': felY,
+      'dinD': dinD, 'dinY': dinY,
     };
   }
 
-  // Veritabanından Okuma - EKSİK OLAN KISIM BUYDU
   factory AytDenemeModel.fromMap(Map<String, dynamic> map) {
     return AytDenemeModel(
       id: map['id'],
@@ -159,10 +160,14 @@ class AytDenemeModel {
       biyY: map['biyY'],
       edbD: map['edbD'],
       edbY: map['edbY'],
-      tarD: map['tarD'],
-      tarY: map['tarY'],
-      cogD: map['cogD'],
-      cogY: map['cogY'],
+      tar1D: map['tar1D'],
+      tar1Y: map['tar1Y'],
+      cog1D: map['cog1D'],
+      cog1Y: map['cog1Y'],
+      tar2D: map['tar2D'] ?? 0,
+      tar2Y: map['tar2Y'] ?? 0, // YENİ (null check)
+      cog2D: map['cog2D'] ?? 0,
+      cog2Y: map['cog2Y'] ?? 0, // YENİ
       felD: map['felD'],
       felY: map['felY'],
       dinD: map['dinD'],

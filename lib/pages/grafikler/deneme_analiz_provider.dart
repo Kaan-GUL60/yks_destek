@@ -13,17 +13,25 @@ double hesaplaTytNet(TytDenemeModel d) {
 }
 
 double hesaplaAytNet(AytDenemeModel d) {
-  // Tüm derslerin netlerini topla
+  // Tüm derslerin netlerini topla (GÜNCELLENDİ)
+  // Kullanıcı alanına göre doldurduğu için boş olanlar 0 gelecek ve sonucu etkilemeyecek.
+
   double mat = d.matD - (d.matY / 4.0);
   double fiz = d.fizD - (d.fizY / 4.0);
   double kim = d.kimD - (d.kimY / 4.0);
   double biy = d.biyD - (d.biyY / 4.0);
   double edb = d.edbD - (d.edbY / 4.0);
-  double tar = d.tarD - (d.tarY / 4.0);
-  double cog = d.cogD - (d.cogY / 4.0);
+
+  double tar1 = d.tar1D - (d.tar1Y / 4.0); // Eski tar -> tar1
+  double cog1 = d.cog1D - (d.cog1Y / 4.0); // Eski cog -> cog1
+
+  double tar2 = d.tar2D - (d.tar2Y / 4.0); // Yeni
+  double cog2 = d.cog2D - (d.cog2Y / 4.0); // Yeni
+
   double fel = d.felD - (d.felY / 4.0);
   double din = d.dinD - (d.dinY / 4.0);
-  return mat + fiz + kim + biy + edb + tar + cog + fel + din;
+
+  return mat + fiz + kim + biy + edb + tar1 + cog1 + tar2 + cog2 + fel + din;
 }
 
 // --- PROVIDERLAR ---

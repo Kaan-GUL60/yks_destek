@@ -109,17 +109,6 @@ Future<void> main() async {
     } catch (e) {
       debugPrint("Bildirim hatası (Simülatörde normaldir): $e");
     }
-
-    /*if (Platform.isAndroid) {
-      await Permission.notification.request();
-      await fln
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestExactAlarmsPermission();
-    }*/
-
-    //Gemini.init(apiKey: geminiApiKey);
   } else {
     // offline modda sadece lokal işleyiş
     debugPrint('Başlangıç: internet yok, Firebase başlatılmadı');
@@ -133,14 +122,6 @@ Future<void> main() async {
         "Payload (offline-terminated) kaydedildi: $notificationLaunchPayload",
       );
     }
-    /*if (Platform.isAndroid) {
-      await Permission.notification.request();
-      await fln
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestExactAlarmsPermission();
-    }*/
   }
   await settingStorage.initializeDatabase();
   await DatabaseHelper.instance.database;
