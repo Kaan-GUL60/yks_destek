@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// Bu provider, seçilen resim dosyasının durumunu tutar.
-// Başlangıçta null (resim seçilmemiş).
 final imagePickerProvider =
     StateNotifierProvider.autoDispose<ImagePickerNotifier, File?>((ref) {
       return ImagePickerNotifier();
@@ -20,41 +18,6 @@ class ImagePickerNotifier extends StateNotifier<File?> {
 
   // Galeriden resim seçme metodu
   Future<void> pickImageFromGallery() async {
-    bool hasPermission = false;
-
-    // 1. Platforma Göre İzin Kontrolü
-    if (Platform.isAndroid) {
-      // Android 13+ (SDK 33) için 'photos', eskiler için 'storage'
-      // permission_handler bunu genellikle otomatik yönetir ama manuel kontrol ekledik
-      final statusPhotos = await Permission.photos.status;
-
-      if (statusPhotos.isGranted || statusPhotos.isLimited) {
-        hasPermission = true;
-      } else {
-        // İzin yoksa iste
-        final requestPhotos = await Permission.photos.request();
-        if (requestPhotos.isGranted || requestPhotos.isLimited) {
-          hasPermission = true;
-        } else {
-          // Android 12 ve altı için Storage denemesi
-          final statusStorage = await Permission.storage.request();
-          if (statusStorage.isGranted) {
-            hasPermission = true;
-          }
-        }
-      }
-
-      if (!hasPermission) {
-        // İzin verilmediyse ayarlara yönlendir
-        await openAppSettings();
-        return;
-      }
-    }
-    // İYİLEŞTİRME: iOS için izin sormuyoruz.
-    // image_picker, iOS'te sistem seçicisini açar ve kullanıcı sadece seçtiği
-    // fotoğrafı uygulamaya verir. Ekstra "Tüm galeriye eriş" iznine gerek yoktur.
-
-    // 2. Resmi Seç
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
