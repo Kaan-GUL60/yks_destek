@@ -19,11 +19,9 @@ workflows:
         BUNDLE_ID: "com.kgs.kgsyksDestek"  # same bundleid from appstore
     scripts:
       - name: Fetch signing files from App Store Connect
-        # Uses the private key (from env) to fetch or create the matching certificate from Apple
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create \
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
       - name: Set up keychain
         script: |
