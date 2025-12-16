@@ -115,6 +115,14 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
       ),
     );
   }
+  @override
+  void initState() {
+    super.initState();
+    // Google ile gelen ismi otomatik doldur
+    final user = FirebaseAuth.instance.currentUser;
+    if (user?.displayName != null && user!.displayName!.isNotEmpty) {
+      _userNameController.text = user.displayName!;
+    }}
 
   @override
   Widget build(BuildContext context) {
