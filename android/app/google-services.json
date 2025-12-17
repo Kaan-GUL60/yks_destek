@@ -1,0 +1,63 @@
+{
+    "project_info": {
+        "project_number": "9542571085",
+        "project_id": "kgsyks-destek-b7645",
+        "storage_bucket": "kgsyks-destek-b7645.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:9542571085:android:c8a4b613637ad04727b804",
+                "android_client_info": {
+                    "package_name": "com.kgs.kgsyks_destek"
+                }
+            },
+            "oauth_client": [
+                {
+                    "client_id": "9542571085-fg9ve517avomacu9sc7ra96acf94fuvi.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                        "package_name": "com.kgs.kgsyks_destek",
+                        "certificate_hash": "119f77250066132a12be9811a1d15a6b84907c1d"
+                    }
+                },
+                {
+                    "client_id": "9542571085-l7nuhu9jsfj9gk4r3uj7injn67d6kglp.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                        "package_name": "com.kgs.kgsyks_destek",
+                        "certificate_hash": "262c4c90ee59b0da6e801c77e626cf6517c0a695"
+                    }
+                },
+                {
+                    "client_id": "9542571085-j624cpmen03u9pnjp5uvdluc5j8loujs.apps.googleusercontent.com",
+                    "client_type": 3
+                }
+            ],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyCGRM_t810paRT0NsAZsSkGECauESfeliU"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": [
+                        {
+                            "client_id": "9542571085-j624cpmen03u9pnjp5uvdluc5j8loujs.apps.googleusercontent.com",
+                            "client_type": 3
+                        },
+                        {
+                            "client_id": "9542571085-ctp9692o707qb4s41r13bmnsq7nmauun.apps.googleusercontent.com",
+                            "client_type": 2,
+                            "ios_info": {
+                                "bundle_id": "com.kgs.kgsyksDestek"
+                            }
+                        }
+                    ]
+                }
+            },
+            "admob_app_id": "ca-app-pub-8502305768894126~3604313131"
+        }
+    ],
+    "configuration_version": "1"
+}

@@ -485,12 +485,18 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                                   : Icons.add_circle,
                               baseColor: Colors.blue,
                               isDarkMode: isDarkMode,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SoruEkle(),
-                                ),
-                              ).then((_) => ref.invalidate(dashboardProvider)),
+                              onTap: () =>
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SoruEkle(),
+                                    ),
+                                  ).then((_) {
+                                    if (mounted) {
+                                      // <--- KONTROL EKLENDİ
+                                      ref.invalidate(dashboardProvider);
+                                    }
+                                  }),
                             ),
                           ),
                           const Gap(15),
@@ -506,12 +512,18 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                                   : Icons.note_add,
                               baseColor: Colors.purpleAccent,
                               isDarkMode: isDarkMode,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const DenemeEklePage(),
-                                ),
-                              ).then((_) => ref.invalidate(dashboardProvider)),
+                              onTap: () =>
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const DenemeEklePage(),
+                                    ),
+                                  ).then((_) {
+                                    if (mounted) {
+                                      // <--- KONTROL EKLENDİ
+                                      ref.invalidate(dashboardProvider);
+                                    }
+                                  }),
                             ),
                           ),
                           const Gap(15),
@@ -527,12 +539,18 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
                                   : Icons.post_add,
                               baseColor: Colors.amber[700]!,
                               isDarkMode: isDarkMode,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const BilgiNotuEklePage(),
-                                ),
-                              ).then((_) => ref.invalidate(dashboardProvider)),
+                              onTap: () =>
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const BilgiNotuEklePage(),
+                                    ),
+                                  ).then((_) {
+                                    if (mounted) {
+                                      // <--- KONTROL EKLENDİ
+                                      ref.invalidate(dashboardProvider);
+                                    }
+                                  }),
                             ),
                           ),
                         ],
