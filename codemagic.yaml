@@ -1,6 +1,6 @@
 workflows:
   my-workflow:
-    name: iOS Build (Telefon ve Web icin)
+    name: iOS Build (Once Zip, Sonra IPA)
     instance_type: mac_mini_m1
     environment:
       flutter: stable
@@ -33,16 +33,18 @@ workflows:
           # Podfile'i onceden garantiye alalim (eger yoksa)
           find . -name "Podfile" -execdir pod install \;
 
-      - name: 1. Telefon icin Build Al (.ipa)
-        script: |
-          flutter build ipa --release --no-codesign
-
-      - name: 2. Web Simulator icin Build Al (.zip)
+      # --- SIRALAMA DEGISTI: ONCE ZIP ---
+      - name: 1. Web Simulator icin Build Al (.zip)
         script: |
           flutter build ios --debug --simulator
           cd build/ios/iphonesimulator
           # Simülatör build'ini ziple
           zip -r Runner.zip Runner.app
+
+      # --- SONRA IPA ---
+      - name: 2. Telefon icin Build Al (.ipa)
+        script: |
+          flutter build ipa --release --no-codesign
 
     artifacts:
       - build/ios/ipa/*.ipa
