@@ -16,9 +16,6 @@
 		<string>com.kgs.kgsyksDestek</string>
 		<key>PROJECT_ID</key>
 		<string>kgsyks-destek-b7645</string>
-		<key>NSUserTrackingUsageDescription</key>
-		<string>Bu uygulama reklamları ve kullanıcı deneyimini iyileştirmek için verilerinizi kullanır.</string>
-
 		<key>STORAGE_BUCKET</key>
 		<string>kgsyks-destek-b7645.firebasestorage.app</string>
 		<key>IS_ADS_ENABLED</key>
