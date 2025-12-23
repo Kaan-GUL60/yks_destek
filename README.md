@@ -60,7 +60,7 @@ Bu proje **Flutter** ile geliştirilmiş olup, aşağıdaki kütüphane ve mimar
 
 Geliştirici: **[Kaan GÜL]**
 E-posta: [kaan.gul.developer@gmail.com]
-LinkedIn: [[Profil Linkiniz](https://www.linkedin.com/in/gkaan/)]
+LinkedIn: [[in/gkaan/](https://www.linkedin.com/in/gkaan/)]
 
 ---
 © 2024 Anliyo. Tüm hakları saklıdır.
