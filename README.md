@@ -1,6 +1,6 @@
 # 🚀 Anliyo - Akıllı YKS & LGS Hazırlık Asistanı
 
-![App Logo](assets/logo/app_logo.png) [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-02569B?logo=flutter)](https://flutter.dev)
+![App Logo](assets/icon/icon.png) [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.0%2B-0175C2?logo=dart)](https://dart.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-FFCA28?logo=firebase)](https://firebase.google.com)
 [![State Management](https://img.shields.io/badge/State-Riverpod-purple)](https://riverpod.dev)
