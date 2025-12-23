@@ -115,6 +115,7 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
       ),
     );
   }
+
   @override
   void initState() {
     super.initState();
@@ -122,7 +123,8 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     final user = FirebaseAuth.instance.currentUser;
     if (user?.displayName != null && user!.displayName!.isNotEmpty) {
       _userNameController.text = user.displayName!;
-    }}
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

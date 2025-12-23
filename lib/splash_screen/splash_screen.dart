@@ -59,7 +59,7 @@ class SplashScreen extends ConsumerWidget {
       // 1. İnternet Yok: Sadece Local Sayaç + Ana Ekran
       if (!isRegisteredLocally) {
         // İnternet yok ve kullanıcı kayıtlı değilse, kayıt/giriş ekranına yönlendir
-        router.goNamed(AppRoute.signUp.name);
+        router.goNamed(AppRoute.signIn.name);
         return;
       } else {
         final count = await localCounter.increment();
@@ -90,7 +90,7 @@ class SplashScreen extends ConsumerWidget {
             .collection('users')
             .doc(kullaniciDetay.uid)
             .get();
-        if (doc.exists || doc.data() == null || doc.data()!.isEmpty) {
+        if (!doc.exists || doc.data() == null || doc.data()!.isEmpty) {
           // Kullanıcı belgesi yoksa veya boşsa, Firestore'a kaydet
           await FirebaseFirestore.instance
               .collection('users')
@@ -125,7 +125,7 @@ class SplashScreen extends ConsumerWidget {
       }
     } else {
       // C) BOOL FALSE İSE -> KAYIT/GİRİŞ EKRANI
-      router.goNamed(AppRoute.signUp.name);
+      router.goNamed(AppRoute.signIn.name);
     }
   }
 
@@ -141,8 +141,3 @@ class SplashScreen extends ConsumerWidget {
     );
   }
 }
-
-/*
-
-
-*/

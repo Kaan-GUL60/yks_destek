@@ -14,6 +14,7 @@ import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/sign/bilgi_database_helper.dart';
 import 'package:kgsyks_destek/sign/kontrol_db.dart';
+import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:kgsyks_destek/sign/yerel_kayit.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -73,9 +74,18 @@ class _SignInState extends ConsumerState<SignIn> {
       );
 
       // 3. Firebase'e Giriş Yap
-      final UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
+      final UserCredential userCredential = await _auth
+          .signInWithCredential(credential)
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw FirebaseAuthException(
+                code: 'timeout',
+                message:
+                    'Firebase sunucusu yanıt vermedi. Lütfen internetinizi kontrol edin.',
+              );
+            },
+          );
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -88,6 +98,7 @@ class _SignInState extends ConsumerState<SignIn> {
             .get();
 
         if (userDoc.exists) {
+          //await syncFirestoreToLocal(user);
           // SENARYO 1: Kullanıcı Kayıtlı -> Ana Ekrana Al
           // Mevcut başarılı giriş fonksiyonunu çağır (Local kayıt ve yönlendirme orada var)
           await _processLoginSuccess(userCredential);
@@ -98,7 +109,6 @@ class _SignInState extends ConsumerState<SignIn> {
           final storage = BooleanSettingStorage();
           await storage.initializeDatabase();
           await storage.saveSetting(true);
-          await storage.closeDatabase();
 
           if (mounted) {
             // Kullanıcıya bilgi verip yönlendiriyoruz
@@ -247,6 +257,7 @@ class _SignInState extends ConsumerState<SignIn> {
             .get();
 
         if (userDoc.exists) {
+          //await syncFirestoreToLocal(user);
           // Kayıtlıysa -> Ana Ekrana (Giriş Başarılı fonksiyonunu çağır)
           if (mounted) await _processLoginSuccess(userCredential);
         } else {
@@ -735,5 +746,41 @@ class _SignInState extends ConsumerState<SignIn> {
     // Kayıt fonksiyonu içinde router çağrısı yapıldığı için buraya eklemeye gerek yok
     // ancak yukarıda _processLoginSuccess içinde çağırdık.
     // Bu metod sadece veritabanı helper'a veri yolluyor.
+  }
+}
+
+Future<void> syncFirestoreToLocal(User user) async {
+  try {
+    // 1. Firestore'dan ilgili kullanıcının dökümanını al
+    final DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (userDoc.exists && userDoc.data() != null) {
+      final data = userDoc.data() as Map<String, dynamic>;
+
+      // 2. Senin kullandığın saveUserData metodunu çağır
+      // Firestore'dan gelen verileri tek tek parametre olarak gönderiyoruz
+      await UserAuth().saveUserData(
+        userName: data['userName'] ?? user.displayName ?? "İsimsiz",
+        email: data['email'] ?? user.email ?? "",
+        uid: user.uid,
+        profilePhotos: data['profilePhotos'] ?? user.photoURL ?? "",
+        sinav:
+            data['sinav'] ??
+            0, // Firestore'da int olarak saklandığını varsayıyoruz
+        sinif: data['sinif'] is int
+            ? data['sinif']
+            : int.tryParse(data['sinif'].toString()) ?? 0,
+        alan: data['alan'] ?? 0,
+        kurumKodu: data['kurumKodu'] ?? "",
+        isPro: data['isPro'] ?? false,
+      );
+
+      debugPrint("Veriler başarıyla Firestore'dan yerele senkronize edildi.");
+    }
+  } catch (e) {
+    debugPrint("Firestore senkronizasyon hatası: $e");
   }
 }

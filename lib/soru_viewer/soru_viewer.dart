@@ -537,6 +537,8 @@ class SoruViewer extends ConsumerWidget {
                           onSelectionChanged: (newSelection) {
                             // --- BURASI SENİN ORİJİNAL KODUN ---
                             // Kullanıcı seçim yaptığında çalışacak, doğru/yanlış kontrolü yapacak.
+                            // GÜVENLİK KONTROLÜ: Eğer seçim boşsa (yani kullanıcı seçimi kaldırdıysa) işlem yapma
+                            if (newSelection.isEmpty) return;
                             final selectedCevap = newSelection.first;
 
                             if (ref.read(soruCevabiProvider) == null) {
