@@ -247,6 +247,14 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
     final kullaniciAsyncValue = ref.watch(kullaniciProvider);
     final dashboardAsyncValue = ref.watch(dashboardProvider);
 
+    // --- SENKRONİZASYON TETİKLEYİCİ ---
+    ref.listen(dashboardProvider, (previous, next) {
+      next.whenData((stats) {
+        _syncDashboardToFirestore(ref, stats);
+      });
+    });
+    // ---------------------------------
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -766,5 +774,42 @@ class _AnaEkranState extends ConsumerState<AnaEkran> {
         ],
       ),
     );
+  }
+}
+
+Future<void> _syncDashboardToFirestore(WidgetRef ref, dynamic stats) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  // Verilerin bir "parmak izini" oluşturuyoruz (Değişip değişmediğini anlamak için)
+  final statsFingerprint =
+      "${stats.cozulenSoru}-${stats.bekleyenSoru}-${stats.maxTytNet}-${stats.son3AytOrt}";
+  final lastSync = ref.read(lastDashboardSyncProvider);
+
+  if (statsFingerprint != lastSync) {
+    try {
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+        "genel": {
+          "veriler": {
+            "cozulenSoru": stats.cozulenSoru,
+            "bekleyenSoru": stats.bekleyenSoru,
+            "yanlisSoru": stats.yanlisSoru,
+            "notSayisi": stats.notSayisi,
+            "maxTytNet": stats.maxTytNet,
+            "maxAytNet": stats.maxAytNet,
+            "son3TytOrt": stats.son3TytOrt,
+            "son3AytOrt": stats.son3AytOrt,
+            "guncellenmeTarihi": FieldValue.serverTimestamp(),
+          },
+        },
+      }, SetOptions(merge: true));
+
+      ref.read(lastDashboardSyncProvider.notifier).state = statsFingerprint;
+      debugPrint(
+        "Dashboard verileri Firestore 'genel.veriler' alanına senkronize edildi.",
+      );
+    } catch (e) {
+      debugPrint("Dashboard senkronizasyon hatası: $e");
+    }
   }
 }

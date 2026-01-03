@@ -3,6 +3,8 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -376,7 +378,28 @@ class BilgiNotuViewer extends ConsumerWidget {
 
                       // --- Resim Alanı ---
                       GestureDetector(
-                        onTap: () {
+                        onTap: () async {
+                          // --- Firestore Sayacı Artırma İşlemi ---
+                          try {
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user != null) {
+                              await FirebaseFirestore.instance
+                                  .collection("users")
+                                  .doc(user.uid)
+                                  .update({
+                                    "stats.bilgiNotuKalemSayacı":
+                                        FieldValue.increment(1),
+                                  });
+                              debugPrint("Firestore sayacı artırıldı.");
+                            } else {
+                              debugPrint("Hata: Kullanıcı oturum açmamış.");
+                            }
+                          } catch (e) {
+                            debugPrint(
+                              "Firestore güncellenirken hata oluştu: $e",
+                            );
+                          }
+                          // --- BİTİŞ ---
                           Navigator.push(
                             context,
                             MaterialPageRoute(

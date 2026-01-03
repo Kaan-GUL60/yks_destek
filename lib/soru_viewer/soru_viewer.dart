@@ -7,6 +7,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kgsyks_destek/ana_ekran/home_state.dart';
 import 'package:kgsyks_destek/cloud_message/services.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
@@ -432,7 +434,31 @@ class SoruViewer extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {
+                              onPressed: () async {
+                                // --- Firestore Sayacı Artırma İşlemi ---
+                                try {
+                                  final user =
+                                      FirebaseAuth.instance.currentUser;
+                                  if (user != null) {
+                                    await FirebaseFirestore.instance
+                                        .collection("users")
+                                        .doc(user.uid)
+                                        .update({
+                                          "stats.soruCozumSayaci":
+                                              FieldValue.increment(1),
+                                        });
+                                    debugPrint("Firestore sayacı artırıldı.");
+                                  } else {
+                                    debugPrint(
+                                      "Hata: Kullanıcı oturum açmamış.",
+                                    );
+                                  }
+                                } catch (e) {
+                                  debugPrint(
+                                    "Firestore güncellenirken hata oluştu: $e",
+                                  );
+                                }
+                                // --- BİTİŞ ---
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -537,6 +563,8 @@ class SoruViewer extends ConsumerWidget {
                           onSelectionChanged: (newSelection) {
                             // --- BURASI SENİN ORİJİNAL KODUN ---
                             // Kullanıcı seçim yaptığında çalışacak, doğru/yanlış kontrolü yapacak.
+                            // GÜVENLİK KONTROLÜ: Eğer seçim boşsa (yani kullanıcı seçimi kaldırdıysa) işlem yapma
+                            if (newSelection.isEmpty) return;
                             final selectedCevap = newSelection.first;
 
                             if (ref.read(soruCevabiProvider) == null) {

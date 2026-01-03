@@ -12,6 +12,8 @@ import 'package:gap/gap.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/main.dart';
+import 'package:kgsyks_destek/sign/save_data.dart';
+import 'package:kgsyks_destek/sign/sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'kontrol_db.dart';
@@ -74,9 +76,18 @@ class _SignUpState extends ConsumerState<SignUp> {
       );
 
       // 3. Firebase'e Giriş Yap
-      final UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
+      final UserCredential userCredential = await _auth
+          .signInWithCredential(credential)
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw FirebaseAuthException(
+                code: 'timeout',
+                message:
+                    'Firebase sunucusu yanıt vermedi. Lütfen internetinizi kontrol edin.',
+              );
+            },
+          );
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -89,6 +100,7 @@ class _SignUpState extends ConsumerState<SignUp> {
             .get();
 
         if (userDoc.exists) {
+          await syncFirestoreToLocal(user);
           // SENARYO 1: Hesap zaten var (Eski kullanıcı) -> Ana Ekrana gönder
           if (mounted) {
             // Opsiyonel: Kullanıcıya bilgi verilebilir
@@ -111,9 +123,9 @@ class _SignUpState extends ConsumerState<SignUp> {
         }
       }
     } on FirebaseAuthException catch (e) {
-      _showErrorSnackbar(e.message ?? "Google işlemi başarısız oldu.");
+      _showErrorSnackbar("Giriş Hatası (${e.code}): ${e.message}");
     } catch (e) {
-      _showErrorSnackbar("Beklenmedik bir hata: $e");
+      _showErrorSnackbar("Beklenmedik Hata: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -203,6 +215,7 @@ class _SignUpState extends ConsumerState<SignUp> {
             .get();
 
         if (userDoc.exists) {
+          await syncFirestoreToLocal(user);
           // Kayıtlıysa -> Ana Ekrana (Giriş Başarılı fonksiyonunu çağır)
           if (mounted) await _processLoginSuccess(userCredential);
         } else {
@@ -210,7 +223,6 @@ class _SignUpState extends ConsumerState<SignUp> {
           final storage = BooleanSettingStorage();
           await storage.initializeDatabase();
           await storage.saveSetting(true);
-          await storage.closeDatabase();
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -671,6 +683,44 @@ class _SignUpState extends ConsumerState<SignUp> {
         ),
       ),
     );
+  }
+
+  Future<void> syncFirestoreToLocal(User user) async {
+    try {
+      // 1. Firestore'dan ilgili kullanıcının dökümanını al
+      final DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists && userDoc.data() != null) {
+        final data = userDoc.data() as Map<String, dynamic>;
+
+        // 2. Senin kullandığın saveUserData metodunu çağır
+        final referralSource = await getReferralSource();
+        // Firestore'dan gelen verileri tek tek parametre olarak gönderiyoruz
+        await UserAuth().saveUserData(
+          userName: data['userName'] ?? user.displayName ?? "İsimsiz",
+          email: data['email'] ?? user.email ?? "",
+          uid: user.uid,
+          profilePhotos: data['profilePhotos'] ?? user.photoURL ?? "",
+          sinav:
+              data['sinav'] ??
+              0, // Firestore'da int olarak saklandığını varsayıyoruz
+          sinif: data['sinif'] is int
+              ? data['sinif']
+              : int.tryParse(data['sinif'].toString()) ?? 0,
+          alan: data['alan'] ?? 0,
+          kurumKodu: data['kurumKodu'] ?? "",
+          isPro: data['isPro'] ?? false,
+          nerdenDuydunuz: referralSource,
+        );
+
+        debugPrint("Veriler başarıyla Firestore'dan yerele senkronize edildi.");
+      }
+    } catch (e) {
+      debugPrint("Firestore senkronizasyon hatası: $e");
+    }
   }
 
   Future<void> checkEmailVerification() async {
