@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:kgsyks_destek/pages/bilgi_karti/bilgi_notu_database_helper.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_database_helper.dart';
 import 'package:kgsyks_destek/pages/grafikler/deneme_model.dart';
@@ -128,3 +129,6 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardStats>((
     son3AytOrt: aytAdet > 0 ? son3AytTop / aytAdet : 0.0,
   );
 });
+
+// Bu provider son gönderilen verinin bir özetini tutacak
+final lastDashboardSyncProvider = StateProvider<String?>((ref) => null);

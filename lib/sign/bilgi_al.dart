@@ -14,8 +14,12 @@ import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/sign/bilgi_database_helper.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:kgsyks_destek/sign/yerel_kayit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final textProvider = StateProvider.autoDispose<String>((ref) => "-");
+final duymaKaynagiProvider = StateProvider.autoDispose<String>(
+  (ref) => "Uygulama Mağazasında gezinirken",
+);
 
 class BilgiAl extends ConsumerStatefulWidget {
   const BilgiAl({super.key});
@@ -45,6 +49,19 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     '6',
     '5',
   ];
+  static const List<String> kaynaklar = <String>[
+    'Uygulama Mağazasında gezinirken',
+    'Arkadaşım önerdi',
+    "Nsosyal'den geliyorum:)",
+    "İnstagram'dan geliyorum",
+    'Diğer sosyal medyalardan geliyorum',
+    'Mailden geliyorum',
+  ];
+  Future<void> _saveReferralSourceToLocal(String source) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('referral_source', source);
+    debugPrint("Kaynak yerele kaydedildi: $source");
+  }
 
   InputDecoration _inputStyle({
     required String hintText,
@@ -207,6 +224,9 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                             )
                           : _sinifSecim(),
 
+                      // ... Sınıf seçimi widget'ının hemen altına:
+                      _buildLabel("Bizi nereden duydunuz?", textColor),
+                      _nerdenDuydunuzSecim(),
                       _buildLabel(
                         "Kullanıcı kodu(yoksa boş bırakın)",
                         textColor,
@@ -268,6 +288,9 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                                         selectedSinav,
                                         selectedSinif,
                                         selectedSinav2,
+                                        ref.read(
+                                          duymaKaynagiProvider,
+                                        ), // Yeni eklenen değer
                                         context,
                                         false,
                                       );
@@ -288,6 +311,9 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
                                           selectedSinav,
                                           selectedSinif,
                                           selectedSinav2,
+                                          ref.read(
+                                            duymaKaynagiProvider,
+                                          ), // Yeni eklenen değer
                                           context,
                                           true,
                                         );
@@ -784,11 +810,76 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     );
   }
 
+  // --- ANDROID İÇİN KAYNAK SEÇİCİ ---
+  Widget _nerdenDuydunuzSecim() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color fillColor = isDarkMode ? const Color(0xFF1E252F) : Colors.white;
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF1C1E21);
+    final Color borderColor = isDarkMode
+        ? Colors.transparent
+        : const Color(0xFFE0E0E0);
+
+    return DropdownMenu<String>(
+      initialSelection: kaynaklar.first,
+      label: Text(
+        'Bizi nereden duydunuz?',
+        style: TextStyle(color: isDarkMode ? Colors.grey : Colors.black54),
+      ),
+      width:
+          MediaQuery.of(context).size.width -
+          48, // Paddingleri hesaba katarak tam genişlik
+      textStyle: TextStyle(color: textColor),
+
+      // --- TASARIM AYARLARI (Sınıf Seçimi ile Birebir) ---
+      menuStyle: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(fillColor),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        floatingLabelBehavior: FloatingLabelBehavior.never,
+        filled: true,
+        fillColor: fillColor,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: isDarkMode
+              ? BorderSide.none
+              : BorderSide(color: borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 1.5),
+        ),
+      ),
+
+      dropdownMenuEntries: kaynaklar.map<DropdownMenuEntry<String>>((
+        String value,
+      ) {
+        return DropdownMenuEntry<String>(value: value, label: value);
+      }).toList(),
+
+      onSelected: (String? value) {
+        if (value != null) {
+          ref.read(duymaKaynagiProvider.notifier).state = value;
+        }
+      },
+    );
+  }
+
   void _userKayit(
     String userName,
     Option selectedSinav,
     String selectedSinif,
     Option2 selectedSinav2,
+    String duymaKaynagi, // Yeni parametre
     BuildContext context,
     bool isPro,
   ) async {
@@ -812,6 +903,9 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
             ? ""
             : _passwordController.text,
         isPro: isPro,
+        nerdenDuydunuz: ref.read(
+          duymaKaynagiProvider,
+        ), // Burayı eklemeyi unutmayın!
       );
       final yeniKullanici = KullaniciModel(
         uid: _auth.currentUser!.uid, // Genellikle Firebase Auth'dan alınır
@@ -832,6 +926,8 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
             : _passwordController.text,
         isPro: isPro, // Örneğin bir checkbox'tan gelen bool değer (true/false)
       );
+      final selectedSource = ref.read(duymaKaynagiProvider);
+      await _saveReferralSourceToLocal(selectedSource);
       await KullaniciDatabaseHelper.instance.saveKullanici(yeniKullanici);
       final ctx = context;
       if (!ctx.mounted) return;

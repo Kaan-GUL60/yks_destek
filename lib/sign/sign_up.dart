@@ -13,6 +13,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kgsyks_destek/go_router/router.dart';
 import 'package:kgsyks_destek/main.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
+import 'package:kgsyks_destek/sign/sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'kontrol_db.dart';
@@ -696,6 +697,7 @@ class _SignUpState extends ConsumerState<SignUp> {
         final data = userDoc.data() as Map<String, dynamic>;
 
         // 2. Senin kullandığın saveUserData metodunu çağır
+        final referralSource = await getReferralSource();
         // Firestore'dan gelen verileri tek tek parametre olarak gönderiyoruz
         await UserAuth().saveUserData(
           userName: data['userName'] ?? user.displayName ?? "İsimsiz",
@@ -711,6 +713,7 @@ class _SignUpState extends ConsumerState<SignUp> {
           alan: data['alan'] ?? 0,
           kurumKodu: data['kurumKodu'] ?? "",
           isPro: data['isPro'] ?? false,
+          nerdenDuydunuz: referralSource,
         );
 
         debugPrint("Veriler başarıyla Firestore'dan yerele senkronize edildi.");

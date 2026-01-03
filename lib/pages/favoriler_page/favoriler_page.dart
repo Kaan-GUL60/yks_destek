@@ -1,7 +1,9 @@
 // ignore_for_file: avoid_print
 
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,27 @@ import 'package:kgsyks_destek/pages/soru_ekle/soru_ekle.dart';
 import 'package:kgsyks_destek/pages/soru_ekle/soru_model.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 
+// Yardımcı fonksiyon (Page class'ı dışında veya içinde static)
+Future<void> _performSync(WidgetRef ref, int count) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    try {
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).update(
+        {"stats.toplamSoruSayisi": count},
+      ); // Nokta notasyonu daha güvenli
+
+      // Senkronize edilen son sayıyı kaydet
+      ref.read(lastSyncedProvider.notifier).state = count;
+    } catch (e) {
+      // stats alanı yoksa set ile oluştur (merge: true)
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+        "stats": {"toplamSoruSayisi": count},
+      }, SetOptions(merge: true));
+      ref.read(lastSyncedProvider.notifier).state = count;
+    }
+  }
+}
+
 class FavorilerPage extends ConsumerWidget {
   const FavorilerPage({super.key});
 
@@ -22,6 +45,17 @@ class FavorilerPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     //final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = const Color(0xFF0099FF);
+    ref.listen(filteredSorularProvider, (previous, next) {
+      // Sadece veri (data) durumundayken işlem yap
+      final count =
+          next.length; // Listeyi sağlayan provider'ın tipine göre güncelleyin
+      final lastSynced = ref.read(lastSyncedProvider);
+
+      // Sayı değişmişse ve veri null değilse senkronize et
+      if (count != lastSynced) {
+        _performSync(ref, count);
+      }
+    });
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

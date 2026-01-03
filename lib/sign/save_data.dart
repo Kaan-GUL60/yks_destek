@@ -58,6 +58,7 @@ class UserAuth {
     required int alan,
     required String kurumKodu,
     required bool isPro,
+    required String nerdenDuydunuz, // 1. Yeni parametre eklendi
   }) async {
     final user = _auth.currentUser;
 
@@ -91,6 +92,7 @@ class UserAuth {
       'alan': alan,
       'kurumKodu': kurumKodu,
       'isPro': isPro,
+      'nerdenDuydunuz': nerdenDuydunuz, // 2. Firestore map'ine eklendi
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

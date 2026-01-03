@@ -53,3 +53,6 @@ final aytListProvider = FutureProvider.autoDispose<List<AytDenemeModel>>((
 // 3. Seçili Tab (TYT mi AYT mi?)
 // 0: TYT, 1: AYT
 final analizTabProvider = StateProvider.autoDispose<int>((ref) => 0);
+
+final lastTytSyncProvider = StateProvider<int>((ref) => -1);
+final lastAytSyncProvider = StateProvider<int>((ref) => -1);

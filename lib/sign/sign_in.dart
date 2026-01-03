@@ -16,6 +16,7 @@ import 'package:kgsyks_destek/sign/bilgi_database_helper.dart';
 import 'package:kgsyks_destek/sign/kontrol_db.dart';
 import 'package:kgsyks_destek/sign/save_data.dart';
 import 'package:kgsyks_destek/sign/yerel_kayit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class SignIn extends ConsumerStatefulWidget {
@@ -749,6 +750,11 @@ class _SignInState extends ConsumerState<SignIn> {
   }
 }
 
+Future<String> getReferralSource() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('referral_source') ?? "Bilinmiyor";
+}
+
 Future<void> syncFirestoreToLocal(User user) async {
   try {
     // 1. Firestore'dan ilgili kullanıcının dökümanını al
@@ -762,6 +768,7 @@ Future<void> syncFirestoreToLocal(User user) async {
 
       // 2. Senin kullandığın saveUserData metodunu çağır
       // Firestore'dan gelen verileri tek tek parametre olarak gönderiyoruz
+      final referralSource = await getReferralSource();
       await UserAuth().saveUserData(
         userName: data['userName'] ?? user.displayName ?? "İsimsiz",
         email: data['email'] ?? user.email ?? "",
@@ -776,6 +783,7 @@ Future<void> syncFirestoreToLocal(User user) async {
         alan: data['alan'] ?? 0,
         kurumKodu: data['kurumKodu'] ?? "",
         isPro: data['isPro'] ?? false,
+        nerdenDuydunuz: referralSource, // Yeni parametre
       );
 
       debugPrint("Veriler başarıyla Firestore'dan yerele senkronize edildi.");

@@ -58,7 +58,7 @@ Bu proje **Flutter** ile geliştirilmiş olup, aşağıdaki kütüphane ve mimar
 
 ## 📩 İletişim
 
-Geliştirici: **[Kaan GÜL]**
+Geliştirici: **Kaan GÜL**
 E-posta: [kaan.gul.developer@gmail.com]
 LinkedIn: [[in/gkaan/](https://www.linkedin.com/in/gkaan/)]
 

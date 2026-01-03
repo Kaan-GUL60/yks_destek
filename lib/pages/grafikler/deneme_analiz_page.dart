@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -162,6 +165,15 @@ class _TytAnalizView extends ConsumerWidget {
         if (denemeler.isEmpty) {
           return const Center(child: Text("Henüz TYT denemesi eklenmedi."));
         }
+        // Build bittikten sonra Firestore'u güncelle
+        Future.microtask(
+          () => _syncDenemelerToFirestore(
+            ref: ref,
+            denemeler: denemeler,
+            fieldName: "tytDeneme.veriler",
+            syncProvider: lastTytSyncProvider,
+          ),
+        );
 
         // --- Veri Hazırlama ---
         final overallSpots = denemeler
@@ -301,6 +313,15 @@ class _AytAnalizView extends ConsumerWidget {
         if (denemeler.isEmpty) {
           return const Center(child: Text("Henüz AYT denemesi eklenmedi."));
         }
+        // Build bittikten sonra Firestore'u güncelle
+        Future.microtask(
+          () => _syncDenemelerToFirestore(
+            ref: ref,
+            denemeler: denemeler,
+            fieldName: "aytDeneme.verileri",
+            syncProvider: lastAytSyncProvider,
+          ),
+        );
 
         // --- Veri Hazırlama (Her Ders Ayrı Ayrı) ---
 
@@ -1288,5 +1309,38 @@ class _DenemeDetailPage extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+Future<void> _syncDenemelerToFirestore({
+  required WidgetRef ref,
+  required List<dynamic> denemeler,
+  required String fieldName, // "tytDeneme.veriler" veya "aytDeneme.verileri"
+  required StateProvider<int> syncProvider,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  final currentCount = denemeler.length;
+  final lastSyncedCount = ref.read(syncProvider);
+
+  // Sadece sayı değiştiyse (yeni deneme eklendiyse/silindiyse) güncelle
+  if (currentCount != lastSyncedCount) {
+    try {
+      // Modelleri Map listesine çeviriyoruz
+      final dataToSync = denemeler.map((d) => d.toMap()).toList();
+
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+        "stats": {
+          fieldName.split('.')[0]: {fieldName.split('.')[1]: dataToSync},
+        },
+      }, SetOptions(merge: true));
+
+      // Senkronize edilen sayıyı güncelle
+      ref.read(syncProvider.notifier).state = currentCount;
+      debugPrint("Firestore $fieldName senkronize edildi.");
+    } catch (e) {
+      debugPrint("Deneme senkronizasyon hatası: $e");
+    }
   }
 }

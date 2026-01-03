@@ -12,7 +12,7 @@ enum DurumFiltresi { hepsi, yanlislarim, boslarim, tamamladiklarim }
 final soruDatabaseProvider = Provider.autoDispose<DatabaseHelper>((ref) {
   return DatabaseHelper.instance;
 });
-
+final lastSyncedProvider = StateProvider<int>((ref) => -1);
 // 2. TÜM SORULARI ÇEKEN PROVIDER (Aynen kalıyor)
 final allSorularProvider = FutureProvider.autoDispose<List<SoruModel>>((ref) {
   final dbHelper = ref.watch(soruDatabaseProvider);
