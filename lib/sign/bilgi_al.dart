@@ -50,12 +50,12 @@ class _BilgiAlState extends ConsumerState<BilgiAl> {
     '5',
   ];
   static const List<String> kaynaklar = <String>[
-    'Uygulama Mağazasında gezinirken',
-    'Arkadaşım önerdi',
-    "Nsosyal'den geliyorum:)",
-    "İnstagram'dan geliyorum",
-    'Diğer sosyal medyalardan geliyorum',
-    'Mailden geliyorum',
+    'Uygulama Mağazası',
+    'Arkadaş Tavsiyesi',
+    "Nsosyal :)",
+    "Sosyal Medya",
+    'Reklam',
+    'Mail',
   ];
   Future<void> _saveReferralSourceToLocal(String source) async {
     final prefs = await SharedPreferences.getInstance();
