@@ -55,12 +55,4 @@ Bu proje **Flutter** ile geliştirilmiş olup, aşağıdaki kütüphane ve mimar
 * **Tarih İşlemleri:** `intl`, `timeago`.
 
 ---
-
-## 📩 İletişim
-
-Geliştirici: **Kaan GÜL**
-E-posta: [kaan.gul.developer@gmail.com]
-LinkedIn: [[in/gkaan/](https://www.linkedin.com/in/gkaan/)]
-
----
 © 2024 Anliyo. Tüm hakları saklıdır.
